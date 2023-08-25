@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "My Crystal Program",
+        "type": "crystal",
+        "request": "launch",
+        "program": "${workspaceFolder}/bin/fetch_ffi.cr",
+        "env": {
+            "MACOSX_DEPLOYMENT_TARGET=": "14.0"
+        }
+      }
+    ]
+  }
