@@ -1,0 +1,6 @@
+*.dwarf
+pact.h
+*.dylib
+*.so
+*.dll
+hello
