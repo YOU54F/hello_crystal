@@ -71,8 +71,7 @@ ifeq (,$(wildcard libpcre2-8.a))
 endif
 
 clean:
-	rm -f hello libgc.a libevent.a libpcre2.a
-	rm -rf gc-8.0.4 libevent-2.1.12-stable pcre2-10.37
+	rm -f hello libssl.a libgc.a libevent.a libpcre2.a include tmp
 
 cirrus_macos_build:
 	cirrus run --output simple macos_build --artifacts-dir tmp --lazy-pull
