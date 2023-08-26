@@ -9,14 +9,14 @@ executable="$1"
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
     # macOS
-    system_libs=$(otool -L "$executable" | awk '{print $1}' | grep -E '^/usr/lib|^/System/Library')
+    system_libs=$(otool -L "$executable" | awk '{print $1}' | tail -n +2 | grep -E "^/usr/lib|^/System/Library|^${EXTRA_LIBS:-"/System/Library"}")
     # Get the list of shared libraries linked against the executable
-    libs=$(otool -L "$executable" | awk '{print $1}')
+    libs=$(otool -L "$executable" | awk '{print $1}'| tail -n +2 )
 elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    # Linux
-    system_libs=$(ldd "$executable" | awk '{print $1}' | grep -E '^/lib|^/usr/lib')
+    # Linux # TODO: Test ldd output is parsed correctly
+    system_libs=$(ldd "$executable" | awk '{print $1}' | tail -n +2 | grep -E "^/lib|^/usr/lib|^${EXTRA_LIBS:-"/usr/lib"}")
     # TODO: Test
-    libs=$(ldd "$executable" | awk '{print $1}')
+    libs=$(ldd "$executable" | awk '{print $1}'| tail -n +2 )
 elif [[ "$OSTYPE" == "msys" ]]; then
     # Windows (using Git Bash)
     system_libs=$(objdump -p "$executable" | grep 'DLL Name:' | awk '{print $3}' | grep -E '^/c/Windows|^/c/WINDOWS|^/c/Program\ Files|^/c/Program\ Files\ \(x86\)')

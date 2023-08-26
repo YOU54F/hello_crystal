@@ -1,21 +1,8 @@
-macos_task:
+crystal_source_task:
+  only_if: $CIRRUS_CHANGE_TITLE =~ 'ci\(crystal_gh_bin\).*'
   macos_instance:
     image: ghcr.io/cirruslabs/macos-ventura-vanilla:latest 
-  test_script: |
-    ls
-    # NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    # (echo; echo 'eval "$(/opt/homebrew/bin/brew shellenv)"') >> /Users/admin/.zprofile
-    # eval "$(/opt/homebrew/bin/brew shellenv)"
-    # brew install libgc libevent
-    chmod +x hello
-    ./hello
-
-
-crystal_task:
-  macos_instance:
-    image: ghcr.io/cirruslabs/macos-ventura-vanilla:latest 
-  test_script: |
-    pwd
+  crystal_install_script: |
     curl -L https://github.com/crystal-lang/crystal/releases/download/1.9.2/crystal-1.9.2-1-darwin-universal.tar.gz | tar xz
     mv crystal-1.9.2-1 ~/crystal
     chmod +x ~/crystal/bin/crystal
@@ -23,22 +10,30 @@ crystal_task:
     file ~/crystal/bin/crystal
     file ~/crystal/embedded/bin/crystal
     echo PATH=$PATH:~/crystal/bin >> $CIRRUS_ENV
-  crystal_script: |
+  crystal_check_script: |
     crystal --version
-  deps_script: | # homebrew will allow us to install xcode 
+  deps_script: | # homebrew will allow us to install xcode
     NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    # NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/uninstall.sh)"
-    # /usr/bin/sudo /usr/sbin/softwareupdate -i Command\ Line\ Tools\ for\ Xcode-14.3
-    # /usr/bin/sudo /usr/bin/xcode-select --switch /Library/Developer/CommandLineTools
-    gcc --version
-    CC=clang make libs
+    make libs
   build_script: |
-    crystal build --release bin/hello.cr --no-debug --link-flags="-L$PWD"
-    ls hello
-    du -hs hello
-    ./hello
+    APP_NAME=hello
+    crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD"
+    ./$APP_NAME
+    file $APP_NAME
+    du -hs $APP_NAME
+    otool -L $APP_NAME
+    chmod +x check_dynamic_linking.sh && ./check_dynamic_linking.sh $APP_NAME
+  fetch_ffi_script: |
+    APP_NAME=fetch_ffi
+    crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD -I$PWD/include"
+    # crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L/Users/Admin/hello_crystal -I/Users/Admin/hello_crystal/include"
+    file $APP_NAME
+    du -hs $APP_NAME
+    otool -L $APP_NAME
+    chmod +x check_dynamic_linking.sh && ./check_dynamic_linking.sh $APP_NAME
+    SSL_CERT_FILE=/private/etc/ssl/cert.pem ./$APP_NAME
 
-crystal_build_task:
+macos_build_task:
   macos_instance:
     # image: ghcr.io/cirruslabs/macos-ventura-vanilla:latest
     image: crystal
@@ -64,6 +59,8 @@ crystal_build_task:
     du -hs $APP_NAME
     otool -L $APP_NAME
     chmod +x check_dynamic_linking.sh && ./check_dynamic_linking.sh $APP_NAME
+    mkdir -p pkg
+    mv $APP_NAME pkg
   fetch_ffi_script: |
     APP_NAME=fetch_ffi
     # crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD -I$PWD/include"
@@ -73,6 +70,8 @@ crystal_build_task:
     otool -L $APP_NAME
     chmod +x check_dynamic_linking.sh && ./check_dynamic_linking.sh $APP_NAME
     SSL_CERT_FILE=/private/etc/ssl/cert.pem ./$APP_NAME
+    mkdir -p pkg
+    mv $APP_NAME pkg
   ffi_script: |
     APP_NAME=ffi
     # crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD -lpact_ffi"
@@ -81,4 +80,27 @@ crystal_build_task:
     file $APP_NAME
     du -hs $APP_NAME
     otool -L $APP_NAME
-    chmod +x check_dynamic_linking.sh && ./check_dynamic_linking.sh $APP_NAME
+    chmod +x check_dynamic_linking.sh && EXTRA_LIBS=libpact_ffi.dylib ./check_dynamic_linking.sh $APP_NAME
+    mkdir -p pkg
+    mv $APP_NAME pkg
+  binary_artifacts:
+    path: "pkg/*"
+
+
+macos_test_task:
+  macos_instance:
+    matrix:
+      - image: crystal
+      - image: ghcr.io/cirruslabs/macos-ventura-vanilla:latest
+  bin_script: |
+    find tmp/macos/binary/pkg -type f | xargs chmod +x
+    mv tmp/macos/binary/pkg/* .
+  hello_script: |
+    APP_NAME=hello
+    ./$APP_NAME
+  fetch_ffi_script: |
+    APP_NAME=fetch_ffi
+    SSL_CERT_FILE=/private/etc/ssl/cert.pem ./$APP_NAME
+  ffi_script: |
+    APP_NAME=ffi
+    ./$APP_NAME

@@ -12,4 +12,4 @@ libevent-*
 gc-*
 libtool-*
 pcre2-*
-/ignore
+/tmp

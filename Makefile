@@ -1,5 +1,5 @@
 .PHONY: all clean hello
-# /Users/admin/hello_crystal
+
 all: hello
 
 hello: libssl.a libgc.a libevent.a libpcre2.a
@@ -73,3 +73,8 @@ endif
 clean:
 	rm -f hello libgc.a libevent.a libpcre2.a
 	rm -rf gc-8.0.4 libevent-2.1.12-stable pcre2-10.37
+
+cirrus_macos_build:
+	cirrus run --output simple macos_build --artifacts-dir tmp --lazy-pull
+cirrus_macos_test:
+	cirrus run --output simple macos_test --lazy-pull
