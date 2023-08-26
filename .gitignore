@@ -4,3 +4,5 @@ pact.h
 *.so
 *.dll
 hello
+glibtool
+fetch_ffi
