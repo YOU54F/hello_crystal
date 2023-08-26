@@ -39,7 +39,6 @@ ifeq (,$(wildcard libgc.a))
 	cp gc-8.0.4/.libs/libgc.a .
 	rm -rf gc-8.0.4
 endif
-
 libevent.a:
 ifeq (,$(wildcard libevent.a))
 	curl -L https://github.com/libevent/libevent/releases/download/release-2.1.12-stable/libevent-2.1.12-stable.tar.gz | tar xz
@@ -55,22 +54,6 @@ ifeq (,$(wildcard libevent.a))
 	cp libevent-2.1.12-stable/.libs/libevent.a .
 	rm -rf libevent-2.1.12-stable
 endif
-# libevent.a:
-# ifeq (,$(wildcard libevent.a))
-# 	curl -L https://github.com/libevent/libevent/releases/download/release-2.1.12-stable/libevent-2.1.12-stable.tar.gz | tar xz
-# 	cd libevent-2.1.12-stable && \
-# 		CPPFLAGS=-I$$PWD/../openssl-3.1.2/openssl-3.1.2/include \
-# 		LDFLAGS="-L$$PWD/../openssl-3.1.2/openssl-3.1.2/ -L$$PWD/../openssl-3.1.2/openssl-3.1.2/include" \
-# 		./configure \
-# 		--disable-shared \
-# 		--disable-dependency-tracking \
-# 		--disable-debug-mode \
-# 		--enable-static \
-# 	&& make
-# 	cp libevent-2.1.12-stable/.libs/libevent.a .
-# 	rm -rf libevent-2.1.12-stable
-# endif
-
 libpcre2.a:
 ifeq (,$(wildcard libpcre2-8.a))
 	curl -L https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.42/pcre2-10.42.tar.gz | tar xz

@@ -6,3 +6,10 @@ pact.h
 hello
 glibtool
 fetch_ffi
+*.a
+openssl-*
+libevent-*
+gc-*
+libtool-*
+pcre2-*
+/ignore
