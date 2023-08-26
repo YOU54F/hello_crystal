@@ -20,7 +20,7 @@ A playground to experiment with Crystal.
 4. Replicate `pact_broker-client` RubyGem functionality.
    1. [ ] `pactflow publish-provider-contract`
 
-## Building Static Libs
+## Building Static Libs on MacOS
 
 When using Crystal built from HomeBrew.
 

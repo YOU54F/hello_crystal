@@ -40,41 +40,45 @@ crystal_task:
 
 crystal_build_task:
   macos_instance:
-    image: ghcr.io/cirruslabs/macos-ventura-vanilla:latest
-    # image: crystal
-  # crystal_script: |
+    # image: ghcr.io/cirruslabs/macos-ventura-vanilla:latest
+    image: crystal
+  # brew_setup_script: |
+  #   NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  #   echo HOMEBREW_PREFIX="/opt/homebrew" >> $CIRRUS_ENV
+  #   echo HOMEBREW_CELLAR="/opt/homebrew/Cellar" >> $CIRRUS_ENV
+  #   echo HOMEBREW_REPOSITORY="/opt/homebrew" >> $CIRRUS_ENV
+  #   echo PATH="/opt/homebrew/bin:/opt/homebrew/sbin:${PATH}" >> $CIRRUS_ENV
+  #   echo MANPATH="/opt/homebrew/share/man$:{MANPATH}" >> $CIRRUS_ENV
+  #   echo INFOPATH="/opt/homebrew/share/info:${INFOPATH}" >> $CIRRUS_ENV
+  # crystal_install_script: |
+  #   brew install crystal
   #   crystal --version
-  # hello_script: |
-  #   APP_NAME=hello
-  #   crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD"
-  #   ./$APP_NAME
-  #   file $APP_NAME
-  #   du -hs $APP_NAME
-  #   otool -L $APP_NAME
-  # ffi_script: |
-  #   APP_NAME=ffi
-  #   crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD -lpact_ffi"
-  #   ./$APP_NAME
-  #   file $APP_NAME
-  #   du -hs $APP_NAME
-  #   otool -L $APP_NAME
-  brew_script: |
-    NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    echo HOMEBREW_PREFIX="/opt/homebrew" >> $CIRRUS_ENV
-    echo HOMEBREW_CELLAR="/opt/homebrew/Cellar" >> $CIRRUS_ENV
-    echo HOMEBREW_REPOSITORY="/opt/homebrew" >> $CIRRUS_ENV
-    echo PATH="/opt/homebrew/bin:/opt/homebrew/sbin:${PATH}" >> $CIRRUS_ENV
-    echo MANPATH="/opt/homebrew/share/man$:{MANPATH}" >> $CIRRUS_ENV
-    echo INFOPATH="/opt/homebrew/share/info:${INFOPATH}" >> $CIRRUS_ENV
-  fetch_ffi_script: |
-    brew install crystal
-    crystal --version
-    make libs
-    APP_NAME=fetch_ffi
-    crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD -I$PWD/include"
-    # crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L/Users/admin/hello_crystal -I/Users/admin/hello_crystal/include"
-    # crystal build --release bin/$APP_NAME.cr --no-debug
+  # crystal_static_libs_script: |
+  #   make libs
+  hello_script: |
+    APP_NAME=hello
+    # crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD"
+    crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L/Users/Admin/hello_crystal -I/Users/Admin/hello_crystal/include"
+    ./$APP_NAME
     file $APP_NAME
     du -hs $APP_NAME
     otool -L $APP_NAME
+    chmod +x check_dynamic_linking.sh && ./check_dynamic_linking.sh $APP_NAME
+  fetch_ffi_script: |
+    APP_NAME=fetch_ffi
+    # crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD -I$PWD/include"
+    crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L/Users/Admin/hello_crystal -I/Users/Admin/hello_crystal/include"
+    file $APP_NAME
+    du -hs $APP_NAME
+    otool -L $APP_NAME
+    chmod +x check_dynamic_linking.sh && ./check_dynamic_linking.sh $APP_NAME
     SSL_CERT_FILE=/private/etc/ssl/cert.pem ./$APP_NAME
+  ffi_script: |
+    APP_NAME=ffi
+    # crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD -lpact_ffi"
+    crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD -lpact_ffi -L/Users/Admin/hello_crystal -I/Users/Admin/hello_crystal/include"
+    ./$APP_NAME
+    file $APP_NAME
+    du -hs $APP_NAME
+    otool -L $APP_NAME
+    chmod +x check_dynamic_linking.sh && ./check_dynamic_linking.sh $APP_NAME
