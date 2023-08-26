@@ -121,6 +121,15 @@ ALPINE_CI_TASKS: &ALPINE_CI_TASKS
     /home/$APP_NAME
     mkdir -p pkg
     mv /home/$APP_NAME pkg
+  test_fetch_ffi_script: |
+    APP_NAME=fetch_ffi
+    file /home/$APP_NAME
+    du -hs /home/$APP_NAME
+    ldd /home/$APP_NAME ||  echo "not dynamically linked, or not found"
+    ldd /home/$APP_NAME 2>&1 | grep -q 'Not a valid dynamic program'
+    /home/$APP_NAME
+    mkdir -p pkg
+    mv /home/$APP_NAME pkg
   binary_artifacts:
     path: "pkg/*"
 
@@ -192,6 +201,10 @@ linux_arm_test_task:
     APP_NAME=hello
     chmod +x $APP_NAME
     ./$APP_NAME
+  fetch_ffi_script: |
+    APP_NAME=fetch_ffi
+    chmod +x $APP_NAME
+    ./$APP_NAME
 linux_amd_test_task: 
   only_if: $CIRRUS_CHANGE_TITLE =~ 'test\(linux_amd_bin\).*'
   env:
@@ -202,5 +215,9 @@ linux_amd_test_task:
   test_script: |
     mv tmp/linux_amd/binary/pkg/* .
     APP_NAME=hello
+    chmod +x $APP_NAME
+    ./$APP_NAME
+  fetch_ffi_script: |
+    APP_NAME=fetch_ffi
     chmod +x $APP_NAME
     ./$APP_NAME

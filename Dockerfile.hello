@@ -8,20 +8,25 @@ RUN crystal run ./bin/hello.cr
 RUN crystal build --release --static ./bin/hello.cr
 RUN ./hello
 RUN du -sh /home/hello
-ENTRYPOINT [ "/home/hello" ]
+RUN crystal build --release --static ./bin/fetch_ffi.cr
+RUN ./fetch_ffi
 
-# FROM ubuntu:latest
-# COPY --from=builder /home/hello /home/hello
-# WORKDIR home
-# RUN du -sh /home/hello
-# ENTRYPOINT [ "/home/hello" ]
-# FROM busybox:latest
-# COPY --from=builder /home/hello /home/hello
-# WORKDIR home
-# RUN du -sh /home/hello
-# ENTRYPOINT [ "/home/hello" ]
-# FROM centos:7
-# COPY --from=builder /home/hello /home/hello
-# WORKDIR home
-# RUN du -sh /home/hello
-# ENTRYPOINT [ "/home/hello" ]
+
+# ENV GLIBC_VERSION=2.35-r1 
+# # https://github.com/sgerrand/alpine-pkg-glibc/issues/185
+
+# RUN apk --no-cache add gcompat bash \
+#      && wget -O /etc/apk/keys/sgerrand.rsa.pub -q https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub \
+#      && wget -q https://github.com/sgerrand/alpine-pkg-glibc/releases/download/${GLIBC_VERSION}/glibc-${GLIBC_VERSION}.apk \
+#      && apk --no-cache --force-overwrite add glibc-${GLIBC_VERSION}.apk
+# RUN apk add gcompat libc6-compat
+# RUN ldd libpact_ffi.so
+# RUN apk add gcompat libc6-compat && ldd libpact_ffi.so
+# RUN crystal build --release --static ./bin/ffi.cr --link-flags "-L/home -lpact_ffi"
+
+
+
+
+
+
+ENTRYPOINT [ "/home/hello" ]
