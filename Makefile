@@ -78,3 +78,15 @@ cirrus_macos_build:
 	cirrus run --output simple macos_build --artifacts-dir tmp --lazy-pull
 cirrus_macos_test:
 	cirrus run --output simple macos_test --lazy-pull
+cirrus_linux_arm_build:
+	cirrus run --output simple 'Prebuild Dockerfile.hello ARCH=arm64 IMAGE=84codes/crystal:latest'
+	cirrus run --output simple 'linux_arm' --artifacts-dir tmp || echo "hack to allow building x-plat images in diff tasks"
+	cirrus run --output simple 'linux_arm' --lazy-pull --artifacts-dir tmp
+cirrus_linux_arm_test:
+	cirrus run --output simple linux_arm_test -e CIRRUS_CHANGE_TITLE='test(linux_arm_bin)'
+cirrus_linux_amd_test:
+	cirrus run --output simple linux_amd_test -e CIRRUS_CHANGE_TITLE='test(linux_amd_bin)'
+cirrus_linux_amd_build:
+	cirrus run --output simple 'Prebuild Dockerfile.hello ARCH=amd64 IMAGE=84codes/crystal:latest'
+	cirrus run --output simple 'linux_amd' --artifacts-dir tmp || echo "hack to allow building x-plat images in diff tasks"
+	cirrus run --output simple 'linux_amd' --lazy-pull --artifacts-dir tmp

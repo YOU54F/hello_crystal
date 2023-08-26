@@ -3,7 +3,6 @@ pact.h
 *.dylib
 *.so
 *.dll
-hello
 glibtool
 fetch_ffi
 *.a
@@ -12,4 +11,5 @@ libevent-*
 gc-*
 libtool-*
 pcre2-*
-/tmp
+# you may want to unignore this when testing cirrus-cli linux_arm_test_task
+/tmp 

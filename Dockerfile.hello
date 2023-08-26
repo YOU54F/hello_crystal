@@ -1,5 +1,6 @@
-FROM 84codes/crystal as builder
-
+ARG IMAGE=84codes/crystal:latest
+ARG ARCH=arm64
+FROM --platform=linux/${ARCH} ${IMAGE} as builder
 WORKDIR home
 ADD bin/ /home/bin/
 ADD lib/ /home/lib/
@@ -9,18 +10,18 @@ RUN ./hello
 RUN du -sh /home/hello
 ENTRYPOINT [ "/home/hello" ]
 
-FROM ubuntu:latest
-COPY --from=builder /home/hello /home/hello
-WORKDIR home
-RUN du -sh /home/hello
-ENTRYPOINT [ "/home/hello" ]
-FROM busybox:latest
-COPY --from=builder /home/hello /home/hello
-WORKDIR home
-RUN du -sh /home/hello
-ENTRYPOINT [ "/home/hello" ]
-FROM centos:7
-COPY --from=builder /home/hello /home/hello
-WORKDIR home
-RUN du -sh /home/hello
-ENTRYPOINT [ "/home/hello" ]
+# FROM ubuntu:latest
+# COPY --from=builder /home/hello /home/hello
+# WORKDIR home
+# RUN du -sh /home/hello
+# ENTRYPOINT [ "/home/hello" ]
+# FROM busybox:latest
+# COPY --from=builder /home/hello /home/hello
+# WORKDIR home
+# RUN du -sh /home/hello
+# ENTRYPOINT [ "/home/hello" ]
+# FROM centos:7
+# COPY --from=builder /home/hello /home/hello
+# WORKDIR home
+# RUN du -sh /home/hello
+# ENTRYPOINT [ "/home/hello" ]

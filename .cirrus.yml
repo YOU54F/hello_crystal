@@ -86,12 +86,13 @@ macos_build_task:
   binary_artifacts:
     path: "pkg/*"
 
-
 macos_test_task:
   macos_instance:
     matrix:
       - image: crystal
+      - image: ghcr.io/cirruslabs/macos-sonoma-vanilla:latest
       - image: ghcr.io/cirruslabs/macos-ventura-vanilla:latest
+      - image: ghcr.io/cirruslabs/macos-monterey-vanilla:latest
   bin_script: |
     find tmp/macos/binary/pkg -type f | xargs chmod +x
     mv tmp/macos/binary/pkg/* .
@@ -103,4 +104,103 @@ macos_test_task:
     SSL_CERT_FILE=/private/etc/ssl/cert.pem ./$APP_NAME
   ffi_script: |
     APP_NAME=ffi
+    ./$APP_NAME
+
+
+ALPINE_CI_TASKS: &ALPINE_CI_TASKS
+  uname_script: |
+    uname -a
+  deps_script: |
+    apk add file
+  test_script: |
+    APP_NAME=hello
+    file /home/$APP_NAME
+    du -hs /home/$APP_NAME
+    ldd /home/$APP_NAME ||  echo "not dynamically linked, or not found"
+    ldd /home/$APP_NAME 2>&1 | grep -q 'Not a valid dynamic program'
+    /home/$APP_NAME
+    mkdir -p pkg
+    mv /home/$APP_NAME pkg
+  binary_artifacts:
+    path: "pkg/*"
+
+linux_arm_task:
+  arm_container:
+    dockerfile: Dockerfile.hello
+    docker_arguments:
+      IMAGE: 84codes/crystal:latest
+      ARCH: arm64
+  <<: *ALPINE_CI_TASKS
+
+linux_amd_task:
+  container:
+    dockerfile: Dockerfile.hello
+    docker_arguments:
+      IMAGE: 84codes/crystal:latest
+      ARCH: amd64
+      # IMAGE: crystallang/crystal:latest-alpine
+  <<: *ALPINE_CI_TASKS
+
+# ========================================
+# Standalone Testing Tasks against GH releases
+# ========================================
+
+DOCKER_MATRIX: &DOCKER_MATRIX
+  - image: debian:latest
+  - image: node:20-slim
+  - image: debian:bookworm-slim
+  - image: bitnami/minideb:latest
+  - image: busybox:glibc
+  - image: busybox:uclibc
+  - image: busybox:musl
+  - image: centos:centos8
+  - image: centos:centos7
+  - image: quay.io/centos/centos:stream
+  - image: quay.io/centos/centos:stream9
+  - image: quay.io/centos/centos:stream9-minimal
+  - image: quay.io/centos/centos:stream8
+  - image: quay.io/centos/centos:8
+  - image: alpine:latest
+  - image: alpine:3.18
+  - image: alpine:3.17
+  - image: alpine:3.16
+  - image: alpine:3.15
+  - image: ubuntu:latest
+  - image: ubuntu:20.04
+  - image: ubuntu:18.04
+  - image: ubuntu:16.04
+  - image: fedora:latest
+  - image: fedora:34
+  - image: fedora:33
+  - image: fedora:32
+  - image: opensuse/leap:latest
+  - image: opensuse/leap:15.3
+  - image: opensuse/leap:15.2
+  - image: opensuse/leap:15.1
+  - image: opensuse/leap:15.0
+  - image: raspbian/stretch
+
+linux_arm_test_task: 
+  only_if: $CIRRUS_CHANGE_TITLE =~ 'test\(linux_arm_bin\).*'
+  env:
+    matrix:
+      <<: *DOCKER_MATRIX
+  arm_container:
+    image: $image
+  test_script: |
+    mv tmp/linux_arm/binary/pkg/* .
+    APP_NAME=hello
+    chmod +x $APP_NAME
+    ./$APP_NAME
+linux_amd_test_task: 
+  only_if: $CIRRUS_CHANGE_TITLE =~ 'test\(linux_amd_bin\).*'
+  env:
+    matrix:
+      <<: *DOCKER_MATRIX
+  container: # amd / x86_64
+    image: $image
+  test_script: |
+    mv tmp/linux_amd/binary/pkg/* .
+    APP_NAME=hello
+    chmod +x $APP_NAME
     ./$APP_NAME
