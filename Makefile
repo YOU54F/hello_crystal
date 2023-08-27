@@ -5,16 +5,7 @@ all: hello
 hello: libssl.a libgc.a libevent.a libpcre2.a
 	crystal build --release hello.cr -o hello -L. -lgc -levent -lpcre2-8
 
-LIBTOOL = glibtool --tag=CC --mode=link
-
-libs: libtool libssl.a libevent.a libpcre2.a libgc.a
-libtool:
-ifeq (,$(wildcard glibtool))
-	curl -L https://ftp.gnu.org/gnu/libtool/libtool-2.4.6.tar.gz | tar xz
-	cd libtool-2.4.6 && ./configure --disable-shared --enable-static && make
-	cp libtool-2.4.6/libtool glibtool
-	rm -rf libtool-2.4.6
-endif
+libs: libssl.a libevent.a libpcre2.a libgc.a
 libssl.a:
 ifeq (,$(wildcard libssl.a))
 	curl -L https://www.openssl.org/source/openssl-3.1.2.tar.gz | tar xz
@@ -71,26 +62,37 @@ ifeq (,$(wildcard libpcre2-8.a))
 endif
 
 clean:
-	rm -f hello libssl.a libgc.a libevent.a libpcre2.a include tmp
+	rm -f *.a include tmp
 
 cirrus_macos_build:
 	cirrus run --output simple macos_build --artifacts-dir tmp --lazy-pull
+cirrus_macos_rosetta_build:
+	cirrus run --output simple macos_rosetta_build --artifacts-dir tmp --lazy-pull
 cirrus_macos_test:
 	cirrus run --output simple macos_test --lazy-pull
+cirrus_macos_rosetta_test:
+	cirrus run --output simple macos_rosetta_test --lazy-pull
 cirrus_linux_arm_build:
-	cirrus run --output simple 'Prebuild Dockerfile.hello ARCH=arm64 IMAGE=84codes/crystal:latest'
+	cirrus run --output simple 'Prebuild Dockerfile ARCH=arm64 IMAGE=84codes/crystal:latest'
 	cirrus run --output simple 'linux_arm' --artifacts-dir tmp || echo "hack to allow building x-plat images in diff tasks"
 	cirrus run --output simple 'linux_arm' --lazy-pull --artifacts-dir tmp
 cirrus_linux_arm_test:
+	sed -i '' -e s/\\/tmp/\#\\/tmp/g .gitignore
 	cirrus run --output simple linux_arm_test -e CIRRUS_CHANGE_TITLE='test(linux_arm_bin)'
+	sed -i '' -e s/\#\\/tmp/\\/tmp/g .gitignore
 cirrus_linux_amd_test:
+	sed -i '' -e s/\\/tmp/\#\\/tmp/g .gitignore
 	cirrus run --output simple linux_amd_test -e CIRRUS_CHANGE_TITLE='test(linux_amd_bin)'
+	sed -i '' -e s/\#\\/tmp/\\/tmp/g .gitignore
 cirrus_linux_amd_build:
-	cirrus run --output simple 'Prebuild Dockerfile.hello ARCH=amd64 IMAGE=84codes/crystal:latest'
+	cirrus run --output simple 'Prebuild Dockerfile ARCH=amd64 IMAGE=84codes/crystal:latest'
 	cirrus run --output simple 'linux_amd' --artifacts-dir tmp || echo "hack to allow building x-plat images in diff tasks"
 	cirrus run --output simple 'linux_amd' --lazy-pull --artifacts-dir tmp
 
-spec: spec_ffi
+fetch_ffi:
+	@if [ ! -f libpact_ffi.a ]; then crystal run bin/fetch_ffi.cr; fi
+
+spec: fetch_ffi spec_ffi
 
 spec_ffi:
-	MACOSX_DEPLOYMENT_TARGET=14.0 crystal spec --link-flags="-L$$PWD -framework Security -framework CoreFoundation -framework IOKit"
+	crystal spec --link-flags="-L$$PWD -framework Security -framework CoreFoundation -framework IOKit"

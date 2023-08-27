@@ -3,7 +3,6 @@ ARG ARCH=arm64
 FROM --platform=linux/${ARCH} ${IMAGE} as builder
 RUN apk add file
 WORKDIR /home
-ADD src/ /home/src/
 ADD bin/ /home/bin/
 ADD lib/ /home/lib/
 

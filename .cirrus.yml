@@ -152,7 +152,6 @@ macos_rosetta_build_task:
 macos_test_task:
   macos_instance:
     matrix:
-      - image: crystal
       - image: ghcr.io/cirruslabs/macos-sonoma-vanilla:latest
       - image: ghcr.io/cirruslabs/macos-ventura-vanilla:latest
       - image: ghcr.io/cirruslabs/macos-monterey-vanilla:latest
@@ -162,12 +161,35 @@ macos_test_task:
   hello_script: |
     APP_NAME=hello
     ./$APP_NAME
-  # fetch_ffi_script: |
-  #   APP_NAME=fetch_ffi
-  #   SSL_CERT_FILE=/private/etc/ssl/cert.pem ./$APP_NAME
+  fetch_ffi_script: |
+    APP_NAME=fetch_ffi
+    SSL_CERT_FILE=/private/etc/ssl/cert.pem ./$APP_NAME
   ffi_script: |
     APP_NAME=ffi
     ./$APP_NAME
+
+macos_rosetta_test_task:
+  macos_instance:
+    matrix:
+      - image: ghcr.io/cirruslabs/macos-sonoma-vanilla:latest
+      - image: ghcr.io/cirruslabs/macos-ventura-vanilla:latest
+      - image: ghcr.io/cirruslabs/macos-monterey-vanilla:latest
+  env:
+    USE_ROSETTA: arch -x86_64
+  rosetta_script: |
+    softwareupdate --install-rosetta --agree-to-license
+  bin_script: |
+    find tmp/macos_rosetta_build/binary/pkg -type f | xargs chmod +x
+    mv tmp/macos_rosetta_build/binary/pkg/* .
+  hello_script: |
+    APP_NAME=hello
+    $USE_ROSETTA ./$APP_NAME
+  # fetch_ffi_script: |
+  #   APP_NAME=fetch_ffi
+  #   SSL_CERT_FILE=/private/etc/ssl/cert.pem $USE_ROSETTA ./$APP_NAME
+  ffi_script: |
+    APP_NAME=ffi
+    $USE_ROSETTA ./$APP_NAME
 
 
 ALPINE_CI_TASKS: &ALPINE_CI_TASKS
@@ -209,7 +231,7 @@ ALPINE_CI_TASKS: &ALPINE_CI_TASKS
 
 linux_arm_task:
   arm_container:
-    dockerfile: Dockerfile.hello
+    dockerfile: Dockerfile
     docker_arguments:
       IMAGE: 84codes/crystal:latest
       ARCH: arm64
@@ -217,7 +239,7 @@ linux_arm_task:
 
 linux_amd_task:
   container:
-    dockerfile: Dockerfile.hello
+    dockerfile: Dockerfile
     docker_arguments:
       IMAGE: 84codes/crystal:latest
       ARCH: amd64

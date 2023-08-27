@@ -5,6 +5,10 @@ targets:
     main: bin/hello.cr
   ffi:
     main: bin/ffi.cr
+  fetch_ffi:
+    main: bin/fetch_ffi.cr
+  pactflow:
+    main: bin/pactflow.cr
 # authors:
 #   - name <email@example.com>
 
