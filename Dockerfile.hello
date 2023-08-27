@@ -1,32 +1,39 @@
 ARG IMAGE=84codes/crystal:latest
 ARG ARCH=arm64
 FROM --platform=linux/${ARCH} ${IMAGE} as builder
-WORKDIR home
+WORKDIR /home
 ADD bin/ /home/bin/
 ADD lib/ /home/lib/
 RUN crystal run ./bin/hello.cr
-RUN crystal build --release --static ./bin/hello.cr
+RUN crystal build --release --static --no-debug ./bin/hello.cr
 RUN ./hello
 RUN du -sh /home/hello
-RUN crystal build --release --static ./bin/fetch_ffi.cr
+RUN crystal build --release --static --no-debug ./bin/fetch_ffi.cr
+RUN apk add file
 RUN ./fetch_ffi
-
-
-# ENV GLIBC_VERSION=2.35-r1 
-# # https://github.com/sgerrand/alpine-pkg-glibc/issues/185
-
-# RUN apk --no-cache add gcompat bash \
-#      && wget -O /etc/apk/keys/sgerrand.rsa.pub -q https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub \
-#      && wget -q https://github.com/sgerrand/alpine-pkg-glibc/releases/download/${GLIBC_VERSION}/glibc-${GLIBC_VERSION}.apk \
-#      && apk --no-cache --force-overwrite add glibc-${GLIBC_VERSION}.apk
-# RUN apk add gcompat libc6-compat
-# RUN ldd libpact_ffi.so
-# RUN apk add gcompat libc6-compat && ldd libpact_ffi.so
-# RUN crystal build --release --static ./bin/ffi.cr --link-flags "-L/home -lpact_ffi"
-
-
-
-
-
-
+RUN ld -L$PWD -lpact_ffi
+RUN find / -name "*.a"
+# RUN find / -name "*.so"
+RUN du -sh /home/libpact_ffi.a
+RUN strip --strip-unneeded /home/libpact_ffi.a
+RUN du -sh /home/libpact_ffi.a
+RUN crystal build --release ./bin/ffi.cr --static --no-debug --link-flags "-L$PWD"
+RUN LD_LIBRARY_PATH=. ldd ffi 2>&1 | grep -q 'Not a valid dynamic program'
+# The following errors if using .so musl file (lib_pactffi.so needs building on alpine with static libgcc and libc )
+# https://github.com/YOU54F/pact-reference/releases/download/libpact_ffi-v0.4.4/libpact_ffi-aarch64-unknown-linux-musl.so.gz
+    # /lib/ld-musl-aarch64.so.1 (0xffffa3797000)
+    # libpact_ffi.so => /home/libpact_ffi.so (0xffffa2264000)
+    # libpcre2-8.so.0 => /usr/lib/libpcre2-8.so.0 (0xffffa21c3000)
+    # libevent-2.1.so.7 => /usr/lib/libevent-2.1.so.7 (0xffffa2162000)
+    # libgcc_s.so.1 => /usr/lib/libgcc_s.so.1 (0xffffa2131000)
+    # libc.musl-aarch64.so.1 => /lib/ld-musl-aarch64.so.1 (0xffffa3797000)
+RUN rm -rf /home/*.a /home/include
+RUN file ffi
+RUN du -hs ffi
+RUN strip -s ffi
+RUN file ffi
+RUN du -hs ffi
+RUN ./ffi
+# RUN LD_LIBRARY_PATH=. ./ffi
+# If using the shared lib
 ENTRYPOINT [ "/home/hello" ]
