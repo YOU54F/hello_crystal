@@ -75,7 +75,8 @@ def main
     # download_ffi("linux-x86_64.so.gz", "lib", "libpact_ffi.so.gz")
     download_ffi("x86_64-unknown-linux-musl.a.gz", "lib", "libpact_ffi.a.gz")
   {% elsif flag?(:darwin) && flag?(:x86_64) %}
-    download_ffi("osx-x86_64.dylib.gz", "lib", "libpact_ffi.dylib.gz")
+    # download_ffi("osx-x86_64.dylib.gz", "lib", "libpact_ffi.dylib.gz")
+    download_ffi("x86_64-apple-darwin.a.gz", "lib", "libpact_ffi.a.gz")
     system = "osx-x86_64"
   {% elsif flag?(:win32) && flag?(:x86_64) %}
     system = "windows-x86_64"
@@ -88,7 +89,9 @@ def main
     # download_ffi("linux-aarch64.so.gz", "lib", "libpact_ffi.so.gz")
   {% elsif flag?(:darwin) && flag?(:aarch64) %}
     system = "osx-aarch64"
-    download_ffi("osx-aarch64-apple-darwin.dylib.gz", "lib", "libpact_ffi.dylib.gz")
+    download_ffi("aarch64-apple-darwin.a.gz", "lib", "libpact_ffi.a.gz")
+    # download_ffi("aarch64-apple-darwin.dylib.gz", "lib", "libpact_ffi.dylib.gz")
+    # download_ffi("osx-aarch64-apple-darwin.dylib.gz", "lib", "libpact_ffi.dylib.gz")
   {% elsif flag?(:win32) && flag?(:aarch64) %}
     system = "windows-aarch64"
   {% end %}
