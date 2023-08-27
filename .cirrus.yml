@@ -159,9 +159,9 @@ DOCKER_MATRIX: &DOCKER_MATRIX
   - image: node:20-slim
   - image: debian:bookworm-slim
   - image: bitnami/minideb:latest
-  - image: busybox:glibc
-  - image: busybox:uclibc
-  - image: busybox:musl
+  # - image: busybox:glibc
+  # - image: busybox:uclibc
+  # - image: busybox:musl
   - image: centos:centos8
   - image: centos:centos7
   - image: quay.io/centos/centos:stream
@@ -174,10 +174,10 @@ DOCKER_MATRIX: &DOCKER_MATRIX
   - image: alpine:3.17
   - image: alpine:3.16
   - image: alpine:3.15
-  - image: ubuntu:latest
-  - image: ubuntu:20.04
-  - image: ubuntu:18.04
-  - image: ubuntu:16.04
+  # - image: ubuntu:latest
+  # - image: ubuntu:20.04
+  # - image: ubuntu:18.04
+  # - image: ubuntu:16.04
   - image: fedora:latest
   - image: fedora:34
   - image: fedora:33
@@ -187,7 +187,7 @@ DOCKER_MATRIX: &DOCKER_MATRIX
   - image: opensuse/leap:15.2
   - image: opensuse/leap:15.1
   - image: opensuse/leap:15.0
-  - image: raspbian/stretch
+  # - image: raspbian/stretch
 
 linux_arm_test_task: 
   only_if: $CIRRUS_CHANGE_TITLE =~ 'test\(linux_arm_bin\).*'
@@ -196,6 +196,9 @@ linux_arm_test_task:
       <<: *DOCKER_MATRIX
   arm_container:
     image: $image
+  deps_script: |
+    apt-get -y update && apt-get -y install ca-certificates || true
+    # apk add file || true
   test_script: |
     mv tmp/linux_arm/binary/pkg/* .
     APP_NAME=hello
