@@ -89,3 +89,8 @@ cirrus_linux_amd_build:
 	cirrus run --output simple 'Prebuild Dockerfile.hello ARCH=amd64 IMAGE=84codes/crystal:latest'
 	cirrus run --output simple 'linux_amd' --artifacts-dir tmp || echo "hack to allow building x-plat images in diff tasks"
 	cirrus run --output simple 'linux_amd' --lazy-pull --artifacts-dir tmp
+
+spec: spec_ffi
+
+spec_ffi:
+	MACOSX_DEPLOYMENT_TARGET=14.0 crystal spec --link-flags="-L$$PWD -framework Security -framework CoreFoundation -framework IOKit"

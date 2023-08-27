@@ -1,4 +1,3 @@
-#!/usr/bin/env crystal
 require "pactflow/client/cli/pactflow"
 
 Pactflow::Client::CLI::Pactflow.start

@@ -4,8 +4,8 @@ A playground to experiment with Crystal.
 
 1. Hello world
    1. [X] Compile to binary on MacOS
-      1. [X] `crystal build --target aarch64-apple-darwin bin/hello.cr` = `1.3M`
-      2. [X] `crystal build --release --target aarch64-apple-darwin bin/hello.cr` = `312K`
+      1. [X] `crystal build --target aarch64-apple-darwin src/hello.cr` = `1.3M`
+      2. [X] `crystal build --release --target aarch64-apple-darwin src/hello.cr` = `312K`
    2. Compile cross-platform
       1. [ ] Windows
       2. [ ] Linux
@@ -84,7 +84,7 @@ When building, link to our static libs - assuming
 Build with
 
 ```sh
-APP_NAME=bin/fetch_ffi.cr
+APP_NAME=src/fetch_ffi.cr
 crystal build --release $APP_NAME --no-debug --link-flags="-L$PWD -I$PWD/include"
 ```
 
