@@ -4,6 +4,10 @@ pact.h
 *.so
 *.dll
 *.a
+*.dll
+*.lib
+*.pdb
+*.exe
 openssl-*
 libevent-*
 gc-*

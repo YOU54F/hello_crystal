@@ -80,7 +80,15 @@ module Pact
         system = "osx-x86_64"
       {% elsif flag?(:win32) && flag?(:x86_64) %}
         system = "windows-x86_64"
-        self.download_ffi("windows-x86_64.dll.gz", "", "pact_ffi.dll.gz")
+        # self.download_ffi("windows-x86_64.dll.gz", "", "pact_ffi.dll.gz")
+
+        ## .lib file is always needed 
+        ## need to reference as (pact_ffi.dll in loader)
+        # self.download_ffi("x86_64-pc-windows-msvc.lib.gz", "", "pact_ffi.lib.gz")
+        # shared
+        self.download_ffi("x86_64-pc-windows-gnu.dll.gz", "", "pact_ffi.dll.gz")
+        # static
+        self.download_ffi("x86_64-pc-windows-msvc.dll.lib.gz", "", "pact_ffi.dll.lib.gz")
       {% elsif flag?(:linux) && flag?(:aarch64) %}
         system = "linux-aarch64"
         self.download_ffi("aarch64-unknown-linux-musl.a.gz", "lib", "libpact_ffi.a.gz")
@@ -94,6 +102,8 @@ module Pact
         # download_ffi("osx-aarch64-apple-darwin.dylib.gz", "lib", "libpact_ffi.dylib.gz")
       {% elsif flag?(:win32) && flag?(:aarch64) %}
         system = "windows-aarch64"
+        self.download_ffi("aarch64-pc-windows-msvc.lib.gz", "", "pact_ffi.lib.gz")
+        self.download_ffi("aarch64-pc-windows-msvc.dll.lib.gz", "", "pact_ffi.dll.lib.gz")
       {% end %}
       puts system
       self.download_ffi_file("pact.h", "pact.h")

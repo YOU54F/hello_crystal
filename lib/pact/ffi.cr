@@ -1,5 +1,10 @@
-# @[Link("pact_ffi", ldflags: "-L$PWD -framework Security -framework CoreFoundation -framework IOKit")]
+{% if flag?(:win32) %}
+@[Link("pact_ffi.dll")]
+{% elsif flag?(:darwin) %}
+@[Link("pact_ffi", ldflags: "-framework Security -framework CoreFoundation -framework IOKit")]
+{% else %}
 @[Link("pact_ffi")]
+{% end %}
 lib LibPactFfi
   fun pactffi_version : LibC::Char*
   fun pactffi_string_delete(str : LibC::Char*)
