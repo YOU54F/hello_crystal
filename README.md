@@ -200,3 +200,217 @@ Error: execution of command failed with exit status 1: cc "${@}" -o /private/tmp
 'fetch_ffi' script failed in 16s!
 'crystal' task failed in 06:19!
 ```
+
+
+## Windows
+
+Windows builds are static by default.
+
+### build
+
+   2.5M    ffi.exe
+   7.7M    ffi.pdb
+
+### release
+
+   1.9M    ffi.exe
+   7.7M    ffi.pdb
+
+### release + no-debug
+
+   1.4M    ffi.exe
+
+#### Rough Windows notes
+
+Crystal Windows
+
+Find files
+
+Get-Childitem –Path C:\ -Include *HSG* -File -Recurse -ErrorAction SilentlyContinue
+
+Run a script (dump bin)
+
+powershell -Command '& "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.35.32215\bin\Hostx86\arm64\dumpbin.exe" /dependents .\ffi.exe'
+
+
+
+powershell -Command '& "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.35.32215\bin\Hostx86\arm64\dumpbin.exe" /dependents .\ffi.exe'
+Microsoft (R) COFF/PE Dumper Version 14.35.32216.1
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+
+Dump of file .\ffi.exe
+
+File Type: EXECUTABLE IMAGE
+
+  Image has the following dependencies:
+
+    pact_ffi.dll
+    ADVAPI32.dll
+    KERNEL32.dll
+    dbghelp.dll
+
+  Summary
+
+      170000 .data
+        9000 .pdata
+      10B000 .rdata
+        1000 .reloc
+       D6000 .text
+        1000 _RDATA
+
+
+
+With Dynamic libs
+
+crystal build --release --no-debug .\bin\ffi.cr -Dpreview_dll
+powershell -Command '& "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.35.32215\bin\Hostx86\arm64\dumpbin.exe" /dependents .\ffi.exe'
+
+  Image has the following dependencies:
+
+    pact_ffi.dll
+    pcre2-8.dll
+    gc.dll
+    libiconv.dll
+    ADVAPI32.dll
+    VCRUNTIME140.dll
+    KERNEL32.dll
+    dbghelp.dll
+    api-ms-win-crt-runtime-l1-1-0.dll
+    api-ms-win-crt-filesystem-l1-1-0.dll
+    api-ms-win-crt-string-l1-1-0.dll
+    api-ms-win-crt-stdio-l1-1-0.dll
+    api-ms-win-crt-heap-l1-1-0.dll
+    api-ms-win-crt-math-l1-1-0.dll
+    api-ms-win-crt-locale-l1-1-0.dll
+
+With Static libs
+
+crystal build --release --no-debug .\bin\ffi.cr
+powershell -Command '& "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.35.32215\bin\Hostx86\arm64\dumpbin.exe" /dependents .\ffi.exe'
+
+  Image has the following dependencies:
+
+    pact_ffi.dll
+    ADVAPI32.dll
+    KERNEL32.dll
+    dbghelp.dll
+
+
+File Size in MB
+
+ls | Select-Object Name, @{Name="MegaBytes";Expression={$_.Length / 1MB}}
+
+
+Contents of pactffi_dll 
+
+Dump of file pact_ffi.dll
+
+File Type: DLL
+
+https://github.com/pact-foundation/pact-reference/releases/download/libpact_ffi-v0.4.7/pact_ffi-windows-x86_64.dll.gz
+
+  Image has the following dependencies:
+
+    kernel32.dll
+    ws2_32.dll
+    shell32.dll
+    pdh.dll
+    ntdll.dll
+    advapi32.dll
+    powrprof.dll
+    ole32.dll
+    oleaut32.dll
+    iphlpapi.dll
+    netapi32.dll
+    secur32.dll
+    user32.dll
+    crypt32.dll
+    bcrypt.dll
+    psapi.dll
+    VCRUNTIME140.dll
+    api-ms-win-crt-heap-l1-1-0.dll
+    api-ms-win-crt-stdio-l1-1-0.dll
+    api-ms-win-crt-runtime-l1-1-0.dll
+    api-ms-win-crt-math-l1-1-0.dll
+    api-ms-win-crt-string-l1-1-0.dll
+
+Dump of file pact_ffi.dll.lib
+
+File Type: LIBRARY
+
+  Summary
+
+          C6 .debug$S
+          14 .idata$2
+          14 .idata$3
+           8 .idata$4
+           8 .idata$5
+           E .idata$6
+
+
+crystal run --release --no-debug --static .\bin\ffi.cr --link-flags="bcrypt.lib crypt32.lib psapi.lib user32.lib pdh.lib advapi32.lib oleaut32.lib netapi32.lib iphlpapi.lib powerprof.lib"
+
+https://github.com/libuv/help/issues/69
+
+crystal run --release --no-debug --static .\bin\ffi.cr --link-flags="kernel32.lib ws2_32.lib shell32.lib pdh.lib advapi32.lib powrprof.lib ole32.lib oleaut32.lib iphlpapi.lib netapi32.lib secur32.lib user32.lib crypt32.lib bcrypt.lib psapi.lib userenv.lib ntdll.lib ucrt.lib ncrypt.lib /NODEFAULTLIB:MSVCRT.lib /NODEFAULTLIB:libucrt.lib"
+
+
+ T:\  $Env:CRYSTAL_LIBRARY_PATH = 'C:\Users\saf\scoop\apps\crystal\1.9.2\lib;T:\'
+
+
+Building Static Lib
+
+$Env:CRYSTAL_LIBRARY_PATH = 'C:\Users\saf\scoop\apps\crystal\1.9.2\lib;T:\'
+
+crystal build --release --no-debug .\bin\ffi.cr --link-flags='kernel32.lib ws2_32.lib shell32.lib pdh.lib advapi32.lib powrprof.lib ole32.lib oleaut32.lib iphlpapi.lib netapi32.lib secur32.lib user32.lib crypt32.lib bcrypt.lib psapi.lib ncrypt.lib userenv.lib ntdll.lib ucrt.lib /NODEFAULTLIB:MSVCRT.lib'
+
+Fails to link, as pactffi.lib links with urct.lib however crystal uses `libucrt` which conflicts
+
+https://github.com/crystal-lang/crystal/issues/11575#issuecomment-1538685602
+
+
+Error message
+
+
+ucrt.lib(api-ms-win-crt-heap-l1-1-0.dll) : error LNK2005: free already defined in libucrt.lib(free.obj)
+ucrt.lib(api-ms-win-crt-heap-l1-1-0.dll) : error LNK2005: malloc already defined in libucrt.lib(malloc.obj)
+ucrt.lib(api-ms-win-crt-stdio-l1-1-0.dll) : error LNK2005: __acrt_iob_func already defined in libucrt.lib(_file.obj)
+ucrt.lib(api-ms-win-crt-stdio-l1-1-0.dll) : error LNK2005: fflush already defined in libucrt.lib(fflush.obj)
+ucrt.lib(api-ms-win-crt-stdio-l1-1-0.dll) : error LNK2005: __stdio_common_vfprintf already defined in libucrt.lib(output.obj)
+ucrt.lib(api-ms-win-crt-stdio-l1-1-0.dll) : error LNK2005: __stdio_common_vsprintf_s already defined in libucrt.lib(output.obj)
+ucrt.lib(api-ms-win-crt-stdio-l1-1-0.dll) : error LNK2005: __stdio_common_vsnprintf_s already defined in libucrt.lib(output.obj)
+ucrt.lib(api-ms-win-crt-heap-l1-1-0.dll) : error LNK2005: calloc already defined in libucrt.lib(calloc.obj)
+ucrt.lib(api-ms-win-crt-utility-l1-1-0.dll) : error LNK2005: qsort already defined in libucrt.lib(qsort.obj)
+   Creating library T:\ffi.lib and object T:\ffi.exp
+T:\ffi.exe : fatal error LNK1169: one or more multiply defined symbols found
+Error: execution of command failed with exit status 2: "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.35.32215\bin\Hostx64\x64\cl.exe" /nologo _main.obj /FeT:\ffi.exe /link "/LIBPATH:C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.35.32215\atlmfc\lib\x64" "/LIBPATH:C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.35.32215\lib\x64" "/LIBPATH:C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\ucrt\x64" "/LIBPATH:C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x64" /INCREMENTAL:NO /STACK:0x800000 /LIBPATH:C:\Users\saf\scoop\apps\crystal\1.9.2\lib /LIBPATH:T:\ /ENTRY:wmainCRTStartup /NODEFAULTLIB:MSVCRT.lib T:\pact_ffi.lib C:\Users\saf\scoop\apps\crystal\1.9.2\lib\pcre2-8.lib C:\Users\saf\scoop\apps\crystal\1.9.2\lib\gc.lib "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.35.32215\lib\x64\libcmt.lib" C:\Users\saf\scoop\apps\crystal\1.9.2\lib\iconv.lib "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x64\advapi32.lib" "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.35.32215\lib\x64\libvcruntime.lib" "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x64\shell32.lib" "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x64\ole32.lib" "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x64\WS2_32.lib" "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x64\kernel32.lib" "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.35.32215\lib\x64\legacy_stdio_definitions.lib" "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x64\DbgHelp.lib" "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\ucrt\x64\libucrt.lib" "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x64\pdh.lib" "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x64\powrprof.lib" "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x64\oleaut32.lib" "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x64\iphlpapi.lib" "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x64\netapi32.lib" "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x64\secur32.lib" "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x64\user32.lib" "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x64\crypt32.lib" "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x64\bcrypt.lib" "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x64\psapi.lib" "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x64\ncrypt.lib" "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x64\userenv.lib" "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x64\ntdll.lib" "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\ucrt\x64\ucrt.lib"
+Using -Dpreview_dll compiles 
+
+crystal build --release --no-debug .\bin\ffi.cr --link-flags='kernel32.lib ws2_32.lib shell32.lib pdh.lib advapi32.lib powrprof.lib ole32.lib oleaut32.lib iphlpapi.lib netapi32.lib secur32.lib user32.lib crypt32.lib bcrypt.lib psapi.lib ncrypt.lib userenv.lib ntdll.lib ucrt.lib /NODEFAULTLIB:MSVCRT.lib' -Dpreview_dll
+
+ Creating library T:\ffi.lib and object T:\ffi.exp
+
+However it generates a lib file and not an executable 
+
+So it actually does create an executable but it is linked to dlls and isn’t linked to the pact_ffi lib
+
+File Type: EXECUTABLE IMAGE
+
+  Image has the following dependencies:
+
+    pcre2-8.dll
+    gc.dll
+    libiconv.dll
+    ADVAPI32.dll
+    VCRUNTIME140.dll
+    KERNEL32.dll
+    dbghelp.dll
+    api-ms-win-crt-runtime-l1-1-0.dll
+    api-ms-win-crt-filesystem-l1-1-0.dll
+    api-ms-win-crt-string-l1-1-0.dll
+    api-ms-win-crt-stdio-l1-1-0.dll
+    api-ms-win-crt-heap-l1-1-0.dll
+    api-ms-win-crt-math-l1-1-0.dll
+    api-ms-win-crt-locale-l1-1-0.dll
+    bcrypt.dll

@@ -1,0 +1,21 @@
+name: Windows CI
+
+on: [push, pull_request]
+
+jobs:
+  x86_64-windows-test:
+    runs-on: windows-2019
+    steps:
+      - uses: actions/checkout@v3
+
+      - run: |
+          iex "& {$(irm get.scoop.sh)} -RunAsAdmin"
+          "$HOME\scoop\shims\" >> $env:GITHUB_PATH
+        name: install scoop
+      - run: |
+          scoop bucket add crystal-preview https://github.com/neatorobito/scoop-crystal
+          scoop install crystal
+      - name: hello
+        run: |
+            crystal build --release bin/hello.cr --no-debug --static
+            ./hello.exe

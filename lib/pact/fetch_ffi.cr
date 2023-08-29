@@ -4,14 +4,11 @@ require "file_utils"
 
 module Pact
   module FetchFfi
-    LIB_DIR     = File.expand_path(File.dirname(__FILE__))
     FFI_VERSION = "v0.4.5"
-    # FFI_VERSION = "v0.4.7"
-    # FFI_VERSION = ENV["FFI_VERSION"] || "0.3.4"
+    # FFI_VERSION = ENV["FFI_VERSION"] || "v0.4.7"
     # Using fork to get .a binarys for all platforms
     BASEURL = "https://github.com/you54f/pact-reference/releases/download"
     # BASEURL = "https://github.com/pact-foundation/pact-reference/releases/download"
-    FFI_DIR = File.expand_path("#{LIB_DIR}/../..")
     {% if flag?(:darwin) %}
       ENV["SSL_CERT_FILE"] ||= "/etc/ssl/cert.pem"
     {% elsif flag?(:linux) %}
@@ -45,7 +42,7 @@ module Pact
 
     def self.download_ffi_file(filename, output_filename)
       url = "#{BASEURL}/libpact_ffi-#{FFI_VERSION}/#{filename}"
-      download_location = "#{FFI_DIR}/#{output_filename}"
+      download_location = "#{output_filename}"
 
       puts "Downloading ffi #{FFI_VERSION} for #{filename}"
       puts " ... from #{url}"
@@ -59,12 +56,12 @@ module Pact
       puts " ... from #{prefix}"
       self.download_ffi_file("#{prefix}pact_ffi-#{suffix}", output_filename)
       puts " ... unzipping '#{output_filename}'"
-      File.open("#{FFI_DIR}/#{output_filename}") do |file|
+      File.open("#{output_filename}") do |file|
         Compress::Gzip::Reader.open(file) do |gzip|
-          File.write("#{FFI_DIR}/#{output_filename.sub(/\.gz$/, "")}", gzip.gets_to_end)
+          File.write("#{output_filename.sub(/\.gz$/, "")}", gzip.gets_to_end)
         end
       end
-      FileUtils.rm("#{FFI_DIR}/#{output_filename}")
+      FileUtils.rm("#{output_filename}")
     end
 
     def self.main
@@ -80,15 +77,24 @@ module Pact
         system = "osx-x86_64"
       {% elsif flag?(:win32) && flag?(:x86_64) %}
         system = "windows-x86_64"
+        # Official sources 0.4.7
         # self.download_ffi("windows-x86_64.dll.gz", "", "pact_ffi.dll.gz")
+        # self.download_ffi("windows-x86_64.dll.lib.gz", "", "pact_ffi.dll.lib.gz")
 
-        ## .lib file is always needed 
-        ## need to reference as (pact_ffi.dll in loader)
-        # self.download_ffi("x86_64-pc-windows-msvc.lib.gz", "", "pact_ffi.lib.gz")
-        # shared
-        self.download_ffi("x86_64-pc-windows-gnu.dll.gz", "", "pact_ffi.dll.gz")
-        # static
+        # From You54f/pact-reference 0.4.5
         self.download_ffi("x86_64-pc-windows-msvc.dll.lib.gz", "", "pact_ffi.dll.lib.gz")
+        # self.download_ffi("x86_64-pc-windows-msvc.lib.gz", "", "pact_ffi.lib.gz")
+        self.download_ffi("x86_64-pc-windows-gnu.dll.gz", "", "pact_ffi.dll.gz")
+
+
+        # From You54f/pact-reference
+        ## .dll.lib file is always needed 
+        ## need to reference as (pact_ffi.dll in loader)
+        # self.download_ffi("x86_64-pc-windows-msvc.dll.lib.gz", "", "pact_ffi.dll.lib.gz")
+        # shared
+        # self.download_ffi("x86_64-pc-windows-gnu.dll.gz", "", "pact_ffi.dll.gz")
+        # static
+        # self.download_ffi("x86_64-pc-windows-msvc.lib.gz", "", "pact_ffi.lib.gz")
       {% elsif flag?(:linux) && flag?(:aarch64) %}
         system = "linux-aarch64"
         self.download_ffi("aarch64-unknown-linux-musl.a.gz", "lib", "libpact_ffi.a.gz")
