@@ -8,6 +8,7 @@ pact.h
 *.lib
 *.pdb
 *.exe
+*.exp
 openssl-*
 libevent-*
 gc-*

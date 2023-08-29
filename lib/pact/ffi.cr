@@ -1,5 +1,6 @@
 {% if flag?(:win32) %}
-@[Link("pact_ffi.dll")]
+# @[Link("pact_ffi")] # If using pact_ffi.lib + pact_ffi.dll.lib 
+@[Link("pact_ffi.dll")] # if using pact_ffi.dll + pact_ffi.dll.lib
 {% elsif flag?(:darwin) %}
 @[Link("pact_ffi", ldflags: "-framework Security -framework CoreFoundation -framework IOKit")]
 {% else %}

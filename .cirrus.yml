@@ -33,87 +33,11 @@ crystal_source_task:
     chmod +x check_dynamic_linking.sh && ./check_dynamic_linking.sh $APP_NAME
     SSL_CERT_FILE=/private/etc/ssl/cert.pem ./$APP_NAME
 
-macos_build_task:
-  macos_instance:
-    # image: ghcr.io/cirruslabs/macos-ventura-vanilla:latest
-    image: crystal
-  # brew_setup_script: |
-  #   NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  #   echo HOMEBREW_PREFIX="/opt/homebrew" >> $CIRRUS_ENV
-  #   echo HOMEBREW_CELLAR="/opt/homebrew/Cellar" >> $CIRRUS_ENV
-  #   echo HOMEBREW_REPOSITORY="/opt/homebrew" >> $CIRRUS_ENV
-  #   echo PATH="/opt/homebrew/bin:/opt/homebrew/sbin:${PATH}" >> $CIRRUS_ENV
-  #   echo MANPATH="/opt/homebrew/share/man$:{MANPATH}" >> $CIRRUS_ENV
-  #   echo INFOPATH="/opt/homebrew/share/info:${INFOPATH}" >> $CIRRUS_ENV
-  # crystal_install_script: |
-  #   brew install crystal
-  #   crystal --version
-  # crystal_static_libs_script: |
-  #   make libs
-  # hello_script: |
-  #   APP_NAME=hello
-  #   # crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD"
-  #   crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L/Users/Admin/hello_crystal -I/Users/Admin/hello_crystal/include"
-  #   ./$APP_NAME
-  #   file $APP_NAME
-  #   du -hs $APP_NAME
-  #   otool -L $APP_NAME
-  #   chmod +x check_dynamic_linking.sh && ./check_dynamic_linking.sh $APP_NAME
-  #   mkdir -p pkg
-  #   mv $APP_NAME pkg
-  fetch_ffi_script: |
-    APP_NAME=fetch_ffi
-    # crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD -I$PWD/include"
-    crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L/Users/Admin/hello_crystal -I/Users/Admin/hello_crystal/include"
-    file $APP_NAME
-    du -hs $APP_NAME
-    otool -L $APP_NAME
-    chmod +x check_dynamic_linking.sh && ./check_dynamic_linking.sh $APP_NAME
-    SSL_CERT_FILE=/private/etc/ssl/cert.pem ./$APP_NAME
-    mkdir -p pkg
-    mv $APP_NAME pkg
-    # otool -L libpact_ffi.dylib
-    file libpact_ffi.a
-    # rm libpact_ffi.dylib
-  ffi_script: |
-    APP_NAME=ffi
-    # crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD  -framework CoreFoundation -framework IOKit -framework Security"
-    crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD -L/Users/Admin/hello_crystal -I/Users/Admin/hello_crystal/include -framework CoreFoundation -framework IOKit -framework Security"
-    ./$APP_NAME
-    file $APP_NAME
-    du -hs $APP_NAME
-    otool -L $APP_NAME
-    chmod +x check_dynamic_linking.sh && EXTRA_LIBS=libpact_ffi.dylib ./check_dynamic_linking.sh $APP_NAME
-    mkdir -p pkg
-    mv $APP_NAME pkg
-  binary_artifacts:
-    path: "pkg/*"
-
-macos_rosetta_build_task:
-  macos_instance:
-    # image: ghcr.io/cirruslabs/macos-ventura-vanilla:latest
-    image: crystal-rosetta
-  env:
-    USE_ROSETTA: arch -x86_64
-  # rosetta_script: |
-  #   softwareupdate --install-rosetta --agree-to-license
-  # brew_setup_script: |
-  #   NONINTERACTIVE=1 $USE_ROSETTA /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  #   echo HOMEBREW_PREFIX="/usr/local/homebrew" >> $CIRRUS_ENV
-  #   echo HOMEBREW_CELLAR="/usr/local/homebrew/Cellar" >> $CIRRUS_ENV
-  #   echo HOMEBREW_REPOSITORY="/usr/local/homebrew" >> $CIRRUS_ENV
-  #   echo PATH="/usr/local/homebrew/bin:/usr/local/homebrew/sbin:${PATH}" >> $CIRRUS_ENV
-  #   echo MANPATH="/usr/local/homebrew/share/man$:{MANPATH}" >> $CIRRUS_ENV
-  #   echo INFOPATH="/usr/local/homebrew/share/info:${INFOPATH}" >> $CIRRUS_ENV
-  # crystal_install_script: |
-  #   brew install crystal
-  #   crystal --version
-  # crystal_static_libs_script: |
-  #   $USE_ROSETTA make libs
+HELLO_TASK_TEMPLATE: &HELLO_TASK_TEMPLATE
   hello_script: |
     APP_NAME=hello
-    # crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD"
-    $USE_ROSETTA crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L/Users/Admin/hello_crystal -I/Users/Admin/hello_crystal/include"
+    crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD"
+    # $USE_ROSETTA crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L/Users/Admin/hello_crystal -I/Users/Admin/hello_crystal/include"
     ./$APP_NAME
     file $APP_NAME
     du -hs $APP_NAME
@@ -121,10 +45,11 @@ macos_rosetta_build_task:
     chmod +x check_dynamic_linking.sh && ./check_dynamic_linking.sh $APP_NAME
     mkdir -p pkg
     mv $APP_NAME pkg
+FETCH_FFI_TASK_TEMPLATE: &FETCH_FFI_TASK_TEMPLATE
   fetch_ffi_script: |
     APP_NAME=fetch_ffi
-    # crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD -I$PWD/include"
-    $USE_ROSETTA crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L/Users/Admin/hello_crystal -I/Users/Admin/hello_crystal/include"
+    crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD -I$PWD/include"
+    # $USE_ROSETTA crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L/Users/Admin/hello_crystal -I/Users/Admin/hello_crystal/include"
     file $APP_NAME
     du -hs $APP_NAME
     otool -L $APP_NAME
@@ -134,7 +59,7 @@ macos_rosetta_build_task:
     mv $APP_NAME pkg
     # otool -L libpact_ffi.dylib
     file libpact_ffi.a
-    # rm libpact_ffi.dylib
+FFI_TASK_TEMPLATE: &FFI_TASK_TEMPLATE
   ffi_script: |
     APP_NAME=ffi
     # crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD  -framework CoreFoundation -framework IOKit -framework Security"
@@ -146,10 +71,60 @@ macos_rosetta_build_task:
     chmod +x check_dynamic_linking.sh && EXTRA_LIBS=libpact_ffi.dylib ./check_dynamic_linking.sh $APP_NAME
     mkdir -p pkg
     mv $APP_NAME pkg
+
+INSTALL_BREW_TEMPLATE: &INSTALL_BREW_TEMPLATE
+  brew_setup_script: |
+    NONINTERACTIVE=1 $USE_ROSETTA /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    echo HOMEBREW_PREFIX="/usr/local/homebrew" >> $CIRRUS_ENV
+    echo HOMEBREW_CELLAR="/usr/local/homebrew/Cellar" >> $CIRRUS_ENV
+    echo HOMEBREW_REPOSITORY="/usr/local/homebrew" >> $CIRRUS_ENV
+    echo PATH="/usr/local/homebrew/bin:/usr/local/homebrew/sbin:${PATH}" >> $CIRRUS_ENV
+    echo MANPATH="/usr/local/homebrew/share/man$:{MANPATH}" >> $CIRRUS_ENV
+    echo INFOPATH="/usr/local/homebrew/share/info:${INFOPATH}" >> $CIRRUS_ENV
+
+INSTALL_ROSETTA_TEMPLATE: &INSTALL_ROSETTA_TEMPLATE
+  rosetta_script: |
+    softwareupdate --install-rosetta --agree-to-license
+
+INSTALL_CRYSTAL_BREW_TEMPLATE: &INSTALL_CRYSTAL_BREW_TEMPLATE
+  crystal_install_script: |
+    brew install crystal
+    crystal --version
+
+MAKE_STATIC_LIBS_TEMPLATE: &MAKE_STATIC_LIBS_TEMPLATE
+  crystal_static_libs_script: |
+    $USE_ROSETTA make libs
+
+macos_build_task:
+  macos_instance:
+    image: ghcr.io/cirruslabs/macos-ventura-vanilla:latest
+    # image: crystal
+  <<: *INSTALL_BREW_TEMPLATE
+  <<: *INSTALL_CRYSTAL_BREW_TEMPLATE
+  <<: *MAKE_STATIC_LIBS_TEMPLATE
+  <<: *HELLO_TASK_TEMPLATE
+  <<: *FETCH_FFI_TASK_TEMPLATE
+  <<: *FFI_TASK_TEMPLATE
+  binary_artifacts:
+    path: "pkg/*"
+macos_rosetta_build_task:
+  macos_instance:
+    image: ghcr.io/cirruslabs/macos-ventura-vanilla:latest
+    # image: crystal-rosetta
+  env:
+    USE_ROSETTA: arch -x86_64
+  <<: *INSTALL_ROSETTA_TEMPLATE
+  <<: *INSTALL_BREW_TEMPLATE
+  <<: *INSTALL_CRYSTAL_BREW_TEMPLATE
+  <<: *MAKE_STATIC_LIBS_TEMPLATE
+  <<: *HELLO_TASK_TEMPLATE
+  <<: *FETCH_FFI_TASK_TEMPLATE
+  <<: *FFI_TASK_TEMPLATE
   binary_artifacts:
     path: "pkg/*"
 
 macos_test_task:
+  only_if: $CIRRUS_CHANGE_TITLE =~ 'test\(macos_arm_bin\).*' || $CIRRUS_RELEASE =~ '*' || $CIRRUS_CHANGE_TITLE =~ 'test\(bin\).*'
   macos_instance:
     matrix:
       - image: ghcr.io/cirruslabs/macos-sonoma-vanilla:latest
@@ -161,14 +136,15 @@ macos_test_task:
   hello_script: |
     APP_NAME=hello
     ./$APP_NAME
-  fetch_ffi_script: |
-    APP_NAME=fetch_ffi
-    SSL_CERT_FILE=/private/etc/ssl/cert.pem ./$APP_NAME
   ffi_script: |
     APP_NAME=ffi
     ./$APP_NAME
+  fetch_ffi_script: |
+    APP_NAME=fetch_ffi
+    ./$APP_NAME
 
 macos_rosetta_test_task:
+  only_if: $CIRRUS_CHANGE_TITLE =~ 'test\(macos_rosetta_bin\).*' || $CIRRUS_RELEASE =~ '*' || $CIRRUS_CHANGE_TITLE =~ 'test\(bin\).*'
   macos_instance:
     matrix:
       - image: ghcr.io/cirruslabs/macos-sonoma-vanilla:latest
@@ -176,21 +152,19 @@ macos_rosetta_test_task:
       - image: ghcr.io/cirruslabs/macos-monterey-vanilla:latest
   env:
     USE_ROSETTA: arch -x86_64
-  rosetta_script: |
-    softwareupdate --install-rosetta --agree-to-license
+  <<: *INSTALL_ROSETTA_TEMPLATE
   bin_script: |
     find tmp/macos_rosetta_build/binary/pkg -type f | xargs chmod +x
     mv tmp/macos_rosetta_build/binary/pkg/* .
   hello_script: |
     APP_NAME=hello
     $USE_ROSETTA ./$APP_NAME
-  # fetch_ffi_script: |
-  #   APP_NAME=fetch_ffi
-  #   SSL_CERT_FILE=/private/etc/ssl/cert.pem $USE_ROSETTA ./$APP_NAME
   ffi_script: |
     APP_NAME=ffi
     $USE_ROSETTA ./$APP_NAME
-
+  fetch_ffi_script: |
+    APP_NAME=fetch_ffi
+    $USE_ROSETTA ./$APP_NAME
 
 ALPINE_CI_TASKS: &ALPINE_CI_TASKS
   uname_script: |
@@ -286,7 +260,7 @@ DOCKER_MATRIX: &DOCKER_MATRIX
   # - image: raspbian/stretch
 
 linux_arm_test_task: 
-  only_if: $CIRRUS_CHANGE_TITLE =~ 'test\(linux_arm_bin\).*'
+  only_if: $CIRRUS_CHANGE_TITLE =~ 'test\(linux_arm_bin\).*' || $CIRRUS_RELEASE =~ '*' || $CIRRUS_CHANGE_TITLE =~ 'test\(bin\).*'
   env:
     matrix:
       <<: *DOCKER_MATRIX
@@ -312,7 +286,7 @@ linux_arm_test_task:
     ./$APP_NAME
     # LD_LIBRARY_PATH=/home ./$APP_NAME
 linux_amd_test_task: 
-  only_if: $CIRRUS_CHANGE_TITLE =~ 'test\(linux_amd_bin\).*'
+  only_if: $CIRRUS_CHANGE_TITLE =~ 'test\(linux_amd_bin\).*' || $CIRRUS_RELEASE =~ '*' || $CIRRUS_CHANGE_TITLE =~ 'test\(bin\).*'
   env:
     matrix:
       <<: *DOCKER_MATRIX

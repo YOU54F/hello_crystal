@@ -62,7 +62,7 @@ ifeq (,$(wildcard libpcre2-8.a))
 endif
 
 clean:
-	rm -f *.a include tmp
+	rm -rf *.a include tmp *.dll *.lib *.exe *.pdb *.h *.exp
 
 cirrus_macos_build:
 	cirrus run --output simple macos_build --artifacts-dir tmp --lazy-pull

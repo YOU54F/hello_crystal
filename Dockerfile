@@ -7,23 +7,37 @@ ADD bin/ /home/bin/
 ADD lib/ /home/lib/
 
 ## hello.cr
-RUN crystal run ./bin/hello.cr
-RUN crystal build --release --static --no-debug ./bin/hello.cr
-RUN ./hello
-RUN du -sh /home/hello
+RUN crystal build --release --static --no-debug ./bin/hello.cr && \
+        ./hello  && \
+        du -sh hello && \
+        strip -s hello  && \
+        du -sh hello
 
 ## fetch_ffi.cr
-RUN crystal build --release --static --no-debug ./bin/fetch_ffi.cr
-RUN ./fetch_ffi
-RUN ld -L$PWD -lpact_ffi
-RUN find / -name "*.a"
-RUN du -sh /home/libpact_ffi.a
-RUN strip --strip-unneeded /home/libpact_ffi.a
-RUN du -sh /home/libpact_ffi.a
+RUN crystal build --release --static --no-debug ./bin/fetch_ffi.cr && \
+        ./fetch_ffi && \
+        du -sh fetch_ffi && \
+        strip -s fetch_ffi && \
+        du -sh fetch_ffi
+
+RUN ld -L$PWD -lpact_ffi && \
+    du -sh libpact_ffi.a && \
+    strip --strip-unneeded libpact_ffi.a && \
+    du -sh libpact_ffi.a
 
 ## ffi.cr
-RUN crystal build --release ./bin/ffi.cr --static --no-debug --link-flags "-L$PWD"
-RUN LD_LIBRARY_PATH=. ldd ffi 2>&1 | grep -q 'Not a valid dynamic program'
+RUN crystal build --release ./bin/ffi.cr --static --no-debug --link-flags "-L$PWD" && \
+    ldd ffi 2>&1 | grep -q 'Not a valid dynamic program' && \
+    rm -rf libpact_ffi.a && \
+    file ffi && \
+    du -hs ffi && \
+    strip -s ffi && \
+    file ffi && \
+    du -hs ffi && \
+    ./ffi
+ENTRYPOINT [ "/bin/sh", "-c" ]
+CMD ["./ffi"]
+
 # The following errors if using .so musl file (lib_pactffi.so needs building on alpine with static libgcc and libc )
 # https://github.com/YOU54F/pact-reference/releases/download/libpact_ffi-v0.4.4/libpact_ffi-aarch64-unknown-linux-musl.so.gz
     # /lib/ld-musl-aarch64.so.1 (0xffffa3797000)
@@ -32,11 +46,3 @@ RUN LD_LIBRARY_PATH=. ldd ffi 2>&1 | grep -q 'Not a valid dynamic program'
     # libevent-2.1.so.7 => /usr/lib/libevent-2.1.so.7 (0xffffa2162000)
     # libgcc_s.so.1 => /usr/lib/libgcc_s.so.1 (0xffffa2131000)
     # libc.musl-aarch64.so.1 => /lib/ld-musl-aarch64.so.1 (0xffffa3797000)
-RUN rm -rf /home/*.a /home/include
-RUN file ffi
-RUN du -hs ffi
-RUN strip -s ffi
-RUN file ffi
-RUN du -hs ffi
-RUN ./ffi
-ENTRYPOINT [ "/home/hello" ]
