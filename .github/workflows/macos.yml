@@ -11,8 +11,14 @@ jobs:
       - name: setup crystal
         run: brew install crystal
 
-      - name: setup static builds
-        run: make libs
+      # - name: setup static libs
+      #   run: make libs
+      - uses: robinraju/release-downloader@v1.8
+        with:
+          latest: true
+          fileName: "crystal-Darwin-x86_64-static-libs.tar.gz"
+      - name: setup pre-packaged static libs
+        run: tar -xzvf crystal-Darwin-x86_64-static-libs.tar.gz
       - name: hello
         run: |
             APP_NAME=hello

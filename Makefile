@@ -65,9 +65,9 @@ clean:
 	rm -rf *.a include tmp *.dll *.lib *.exe *.pdb *.h *.exp
 
 cirrus_macos_build:
-	cirrus run --output simple macos_build --artifacts-dir tmp --lazy-pull
+	cirrus run --output simple macos_build --artifacts-dir tmp --lazy-pull -e GH_TOKEN
 cirrus_macos_rosetta_build:
-	cirrus run --output simple macos_rosetta_build --artifacts-dir tmp --lazy-pull
+	cirrus run --output simple macos_rosetta_build --artifacts-dir tmp --lazy-pull -e GH_TOKEN -e CIRRUS_CHANGE_TITLE='build(macos_rosetta_bin)'
 cirrus_macos_test:
 	cirrus run --output simple macos_test --lazy-pull
 cirrus_macos_rosetta_test:
