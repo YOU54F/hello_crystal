@@ -36,87 +36,133 @@ crystal_source_task:
 HELLO_TASK_TEMPLATE: &HELLO_TASK_TEMPLATE
   hello_script: |
     APP_NAME=hello
-    crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD"
-    # $USE_ROSETTA crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L/Users/Admin/hello_crystal -I/Users/Admin/hello_crystal/include"
-    ./$APP_NAME
+    if [[ $IMAGE == "crystal" || $IMAGE == "crystal-rosetta" ]]; then
+      $USE_ROSETTA crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD -L/Users/Admin/hello_crystal -I/Users/Admin/hello_crystal/include"
+    else
+      $USE_ROSETTA crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD"
+    fi
     file $APP_NAME
+    du -hs $APP_NAME
+    strip -S "$APP_NAME"
     du -hs $APP_NAME
     otool -L $APP_NAME
     chmod +x check_dynamic_linking.sh && ./check_dynamic_linking.sh $APP_NAME
+    ./$APP_NAME
     mkdir -p pkg
     mv $APP_NAME pkg
 FETCH_FFI_TASK_TEMPLATE: &FETCH_FFI_TASK_TEMPLATE
   fetch_ffi_script: |
     APP_NAME=fetch_ffi
-    crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD -I$PWD/include"
-    # $USE_ROSETTA crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L/Users/Admin/hello_crystal -I/Users/Admin/hello_crystal/include"
+    if [[ $IMAGE == "crystal" || $IMAGE == "crystal-rosetta" ]]; then
+      $USE_ROSETTA crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD -L/Users/Admin/hello_crystal -I/Users/Admin/hello_crystal/include"
+    else
+      $USE_ROSETTA crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD"
+    fi
     file $APP_NAME
+    du -hs $APP_NAME
+    strip -S $APP_NAME
     du -hs $APP_NAME
     otool -L $APP_NAME
     chmod +x check_dynamic_linking.sh && ./check_dynamic_linking.sh $APP_NAME
-    SSL_CERT_FILE=/private/etc/ssl/cert.pem ./$APP_NAME
+    ./$APP_NAME
     mkdir -p pkg
     mv $APP_NAME pkg
     # otool -L libpact_ffi.dylib
-    file libpact_ffi.a
+    du -hs libpact_ffi.a
+    strip -S libpact_ffi.a
+    du -hs libpact_ffi.a
 FFI_TASK_TEMPLATE: &FFI_TASK_TEMPLATE
   ffi_script: |
     APP_NAME=ffi
-    # crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD  -framework CoreFoundation -framework IOKit -framework Security"
-    $USE_ROSETTA crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD -L/Users/Admin/hello_crystal -I/Users/Admin/hello_crystal/include -framework CoreFoundation -framework IOKit -framework Security"
-    ./$APP_NAME
+    if [[ $IMAGE == "crystal" || $IMAGE == "crystal-rosetta" ]]; then
+      $USE_ROSETTA crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD -L/Users/Admin/hello_crystal -I/Users/Admin/hello_crystal/include -framework CoreFoundation -framework IOKit -framework Security"
+    else
+      $USE_ROSETTA crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD -framework CoreFoundation -framework IOKit -framework Security"
+    fi
+    rm -f libpact_ffi.a
     file $APP_NAME
+    du -hs $APP_NAME
+    strip -S $APP_NAME
     du -hs $APP_NAME
     otool -L $APP_NAME
     chmod +x check_dynamic_linking.sh && EXTRA_LIBS=libpact_ffi.dylib ./check_dynamic_linking.sh $APP_NAME
+    ./$APP_NAME
     mkdir -p pkg
     mv $APP_NAME pkg
-
 INSTALL_BREW_TEMPLATE: &INSTALL_BREW_TEMPLATE
   brew_setup_script: |
-    NONINTERACTIVE=1 $USE_ROSETTA /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    echo HOMEBREW_PREFIX="/usr/local/homebrew" >> $CIRRUS_ENV
-    echo HOMEBREW_CELLAR="/usr/local/homebrew/Cellar" >> $CIRRUS_ENV
-    echo HOMEBREW_REPOSITORY="/usr/local/homebrew" >> $CIRRUS_ENV
-    echo PATH="/usr/local/homebrew/bin:/usr/local/homebrew/sbin:${PATH}" >> $CIRRUS_ENV
-    echo MANPATH="/usr/local/homebrew/share/man$:{MANPATH}" >> $CIRRUS_ENV
-    echo INFOPATH="/usr/local/homebrew/share/info:${INFOPATH}" >> $CIRRUS_ENV
-
+    if [[ "$IMAGE" =~ vanilla ]] || [[ "$USE_ROSETTA" == "arch -x86_64" ]]; then
+      NONINTERACTIVE=1 $USE_ROSETTA /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      echo HOMEBREW_PREFIX="${USER_LIB_DIR:-/opt/}homebrew" >> $CIRRUS_ENV
+      echo HOMEBREW_CELLAR="${USER_LIB_DIR:-/opt/}homebrew/Cellar" >> $CIRRUS_ENV
+      echo HOMEBREW_REPOSITORY="${USER_LIB_DIR:-/opt/}homebrew" >> $CIRRUS_ENV
+      echo PATH="${USER_LIB_DIR:-/opt/}homebrew/bin:${USER_LIB_DIR:-/opt/}homebrew/sbin:${PATH}" >> $CIRRUS_ENV
+      echo MANPATH="${USER_LIB_DIR:-/opt/}homebrew/share/man$:{MANPATH}" >> $CIRRUS_ENV
+      echo INFOPATH="${USER_LIB_DIR:-/opt/}homebrew/share/info:${INFOPATH}" >> $CIRRUS_ENV
+    fi
 INSTALL_ROSETTA_TEMPLATE: &INSTALL_ROSETTA_TEMPLATE
   rosetta_script: |
-    softwareupdate --install-rosetta --agree-to-license
-
+    if ! [[ "$IMAGE" =~ ^(crystal|crystal-rosetta)$ ]]; then
+      softwareupdate --install-rosetta --agree-to-license
+    fi
 INSTALL_CRYSTAL_BREW_TEMPLATE: &INSTALL_CRYSTAL_BREW_TEMPLATE
   crystal_install_script: |
-    brew install crystal
-    crystal --version
-
+    if ! [[ "$IMAGE" =~ ^(crystal|crystal-rosetta)$ ]]; then
+      HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1 $USE_ROSETTA brew install crystal
+      crystal --version
+    fi
 MAKE_STATIC_LIBS_TEMPLATE: &MAKE_STATIC_LIBS_TEMPLATE
   crystal_static_libs_script: |
-    $USE_ROSETTA make libs
+    if ! [[ "$IMAGE" =~ ^(crystal|crystal-rosetta)$ ]]; then
+      # $USE_ROSETTA make libs
+      gh release download --repo you54f/hello_crystal -p "*$($USE_ROSETTA uname -m)-static-libs*"
+      tar -xzvf crystal-Darwin-$($USE_ROSETTA uname -m)-static-libs.tar.gz
+      ls
+      pwd
+    fi
+PKG_STATIC_LIBS_TEMPLATE: &PKG_STATIC_LIBS_TEMPLATE
+  package_static_libs_script: |
+    if [[ "$IMAGE" =~ ^(crystal|crystal-rosetta)$ ]]; then
+      export WORK_DIR=$PWD
+      cd /Users/Admin/hello_crystal
+      tar -czvf crystal-$(uname -s)-$($USE_ROSETTA uname -m)-static-libs.tar.gz *.a include/
+      mkdir -p $WORK_DIR/pkg
+      mv crystal-$(uname -s)-$($USE_ROSETTA uname -m)-static-libs.tar.gz $WORK_DIR/pkg
+    fi
 
 macos_build_task:
+  # only_if: $CIRRUS_CHANGE_TITLE =~ 'build\(macos_arm_bin\).*' || $CIRRUS_CHANGE_TITLE =~ 'build\(bin\).*'
+  env: 
+    matrix:
+    #  - IMAGE: crystal
+     - IMAGE: ghcr.io/cirruslabs/macos-ventura-base:latest
+    #  - IMAGE: ghcr.io/cirruslabs/macos-ventura-vanilla:latest
   macos_instance:
-    image: ghcr.io/cirruslabs/macos-ventura-vanilla:latest
-    # image: crystal
+    image: $IMAGE
   <<: *INSTALL_BREW_TEMPLATE
   <<: *INSTALL_CRYSTAL_BREW_TEMPLATE
   <<: *MAKE_STATIC_LIBS_TEMPLATE
+  <<: *PKG_STATIC_LIBS_TEMPLATE
   <<: *HELLO_TASK_TEMPLATE
   <<: *FETCH_FFI_TASK_TEMPLATE
   <<: *FFI_TASK_TEMPLATE
   binary_artifacts:
     path: "pkg/*"
 macos_rosetta_build_task:
-  macos_instance:
-    image: ghcr.io/cirruslabs/macos-ventura-vanilla:latest
-    # image: crystal-rosetta
-  env:
+  only_if: $CIRRUS_CHANGE_TITLE =~ 'build\(macos_rosetta_bin\).*' || $CIRRUS_CHANGE_TITLE =~ 'build\(bin\).*'
+  env: 
     USE_ROSETTA: arch -x86_64
+    USER_LIB_DIR: /usr/local/
+    matrix:
+    #  - IMAGE: crystal-rosetta
+     - IMAGE: ghcr.io/cirruslabs/macos-ventura-base:latest
+  macos_instance:
+    image: $IMAGE
   <<: *INSTALL_ROSETTA_TEMPLATE
   <<: *INSTALL_BREW_TEMPLATE
   <<: *INSTALL_CRYSTAL_BREW_TEMPLATE
   <<: *MAKE_STATIC_LIBS_TEMPLATE
+  <<: *PKG_STATIC_LIBS_TEMPLATE
   <<: *HELLO_TASK_TEMPLATE
   <<: *FETCH_FFI_TASK_TEMPLATE
   <<: *FFI_TASK_TEMPLATE
@@ -124,7 +170,7 @@ macos_rosetta_build_task:
     path: "pkg/*"
 
 macos_test_task:
-  only_if: $CIRRUS_CHANGE_TITLE =~ 'test\(macos_arm_bin\).*' || $CIRRUS_RELEASE =~ '*' || $CIRRUS_CHANGE_TITLE =~ 'test\(bin\).*'
+  only_if: $CIRRUS_CHANGE_TITLE =~ 'test\(macos_arm_bin\).*' || $CIRRUS_CHANGE_TITLE =~ 'test\(bin\).*'
   macos_instance:
     matrix:
       - image: ghcr.io/cirruslabs/macos-sonoma-vanilla:latest
@@ -144,7 +190,7 @@ macos_test_task:
     ./$APP_NAME
 
 macos_rosetta_test_task:
-  only_if: $CIRRUS_CHANGE_TITLE =~ 'test\(macos_rosetta_bin\).*' || $CIRRUS_RELEASE =~ '*' || $CIRRUS_CHANGE_TITLE =~ 'test\(bin\).*'
+  only_if: $CIRRUS_CHANGE_TITLE =~ 'test\(macos_rosetta_bin\).*' || $CIRRUS_CHANGE_TITLE =~ 'test\(bin\).*'
   macos_instance:
     matrix:
       - image: ghcr.io/cirruslabs/macos-sonoma-vanilla:latest
@@ -175,7 +221,7 @@ ALPINE_CI_TASKS: &ALPINE_CI_TASKS
     APP_NAME=hello
     file /home/$APP_NAME
     du -hs /home/$APP_NAME
-    ldd /home/$APP_NAME ||  echo "not dynamically linked, or not found"
+    ldd /home/$APP_NAME || echo "not dynamically linked, or not found"
     ldd /home/$APP_NAME 2>&1 | grep -q 'Not a valid dynamic program'
     /home/$APP_NAME
     mkdir -p pkg
@@ -184,7 +230,7 @@ ALPINE_CI_TASKS: &ALPINE_CI_TASKS
     APP_NAME=fetch_ffi
     file /home/$APP_NAME
     du -hs /home/$APP_NAME
-    ldd /home/$APP_NAME ||  echo "not dynamically linked, or not found"
+    ldd /home/$APP_NAME || echo "not dynamically linked, or not found"
     ldd /home/$APP_NAME 2>&1 | grep -q 'Not a valid dynamic program'
     /home/$APP_NAME
     mkdir -p pkg
@@ -193,7 +239,7 @@ ALPINE_CI_TASKS: &ALPINE_CI_TASKS
     APP_NAME=ffi
     file /home/$APP_NAME
     du -hs /home/$APP_NAME
-    LD_LIBRARY_PATH=/home ldd /home/$APP_NAME ||  echo "not dynamically linked, or not found"
+    LD_LIBRARY_PATH=/home ldd /home/$APP_NAME || echo "not dynamically linked, or not found"
     # LD_LIBRARY_PATH=/home ldd /home/$APP_NAME 2>&1 | grep -q 'Not a valid dynamic program'
     ls
     ls /home
@@ -260,7 +306,7 @@ DOCKER_MATRIX: &DOCKER_MATRIX
   # - image: raspbian/stretch
 
 linux_arm_test_task: 
-  only_if: $CIRRUS_CHANGE_TITLE =~ 'test\(linux_arm_bin\).*' || $CIRRUS_RELEASE =~ '*' || $CIRRUS_CHANGE_TITLE =~ 'test\(bin\).*'
+  only_if: $CIRRUS_CHANGE_TITLE =~ 'test\(linux_arm_bin\).*' || $CIRRUS_CHANGE_TITLE =~ 'test\(bin\).*'
   env:
     matrix:
       <<: *DOCKER_MATRIX
@@ -286,7 +332,7 @@ linux_arm_test_task:
     ./$APP_NAME
     # LD_LIBRARY_PATH=/home ./$APP_NAME
 linux_amd_test_task: 
-  only_if: $CIRRUS_CHANGE_TITLE =~ 'test\(linux_amd_bin\).*' || $CIRRUS_RELEASE =~ '*' || $CIRRUS_CHANGE_TITLE =~ 'test\(bin\).*'
+  only_if: $CIRRUS_CHANGE_TITLE =~ 'test\(linux_amd_bin\).*' || $CIRRUS_CHANGE_TITLE =~ 'test\(bin\).*'
   env:
     matrix:
       <<: *DOCKER_MATRIX
