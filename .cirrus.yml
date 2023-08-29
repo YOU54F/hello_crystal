@@ -1,38 +1,3 @@
-crystal_source_task:
-  only_if: $CIRRUS_CHANGE_TITLE =~ 'ci\(crystal_gh_bin\).*'
-  macos_instance:
-    image: ghcr.io/cirruslabs/macos-ventura-vanilla:latest 
-  crystal_install_script: |
-    curl -L https://github.com/crystal-lang/crystal/releases/download/1.9.2/crystal-1.9.2-1-darwin-universal.tar.gz | tar xz
-    mv crystal-1.9.2-1 ~/crystal
-    chmod +x ~/crystal/bin/crystal
-    ~/crystal/bin/crystal --version
-    file ~/crystal/bin/crystal
-    file ~/crystal/embedded/bin/crystal
-    echo PATH=$PATH:~/crystal/bin >> $CIRRUS_ENV
-  crystal_check_script: |
-    crystal --version
-  deps_script: | # homebrew will allow us to install xcode
-    NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    make libs
-  build_script: |
-    APP_NAME=hello
-    crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD"
-    ./$APP_NAME
-    file $APP_NAME
-    du -hs $APP_NAME
-    otool -L $APP_NAME
-    chmod +x check_dynamic_linking.sh && ./check_dynamic_linking.sh $APP_NAME
-  fetch_ffi_script: |
-    APP_NAME=fetch_ffi
-    crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD -I$PWD/include"
-    # crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L/Users/Admin/hello_crystal -I/Users/Admin/hello_crystal/include"
-    file $APP_NAME
-    du -hs $APP_NAME
-    otool -L $APP_NAME
-    chmod +x check_dynamic_linking.sh && ./check_dynamic_linking.sh $APP_NAME
-    SSL_CERT_FILE=/private/etc/ssl/cert.pem ./$APP_NAME
-
 HELLO_TASK_TEMPLATE: &HELLO_TASK_TEMPLATE
   hello_script: |
     APP_NAME=hello
@@ -56,7 +21,7 @@ FETCH_FFI_TASK_TEMPLATE: &FETCH_FFI_TASK_TEMPLATE
     if [[ $IMAGE == "crystal" || $IMAGE == "crystal-rosetta" ]]; then
       $USE_ROSETTA crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD -L/Users/Admin/hello_crystal -I/Users/Admin/hello_crystal/include"
     else
-      $USE_ROSETTA crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD"
+      $USE_ROSETTA crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD -I$PWD/include"
     fi
     file $APP_NAME
     du -hs $APP_NAME
@@ -77,7 +42,7 @@ FFI_TASK_TEMPLATE: &FFI_TASK_TEMPLATE
     if [[ $IMAGE == "crystal" || $IMAGE == "crystal-rosetta" ]]; then
       $USE_ROSETTA crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD -L/Users/Admin/hello_crystal -I/Users/Admin/hello_crystal/include -framework CoreFoundation -framework IOKit -framework Security"
     else
-      $USE_ROSETTA crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD -framework CoreFoundation -framework IOKit -framework Security"
+      $USE_ROSETTA crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD -I$PWD/include -framework CoreFoundation -framework IOKit -framework Security"
     fi
     rm -f libpact_ffi.a
     file $APP_NAME
@@ -91,14 +56,15 @@ FFI_TASK_TEMPLATE: &FFI_TASK_TEMPLATE
     mv $APP_NAME pkg
 INSTALL_BREW_TEMPLATE: &INSTALL_BREW_TEMPLATE
   brew_setup_script: |
-    if [[ "$IMAGE" =~ vanilla ]] || [[ "$USE_ROSETTA" == "arch -x86_64" ]]; then
-      NONINTERACTIVE=1 $USE_ROSETTA /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-      echo HOMEBREW_PREFIX="${USER_LIB_DIR:-/opt/}homebrew" >> $CIRRUS_ENV
-      echo HOMEBREW_CELLAR="${USER_LIB_DIR:-/opt/}homebrew/Cellar" >> $CIRRUS_ENV
-      echo HOMEBREW_REPOSITORY="${USER_LIB_DIR:-/opt/}homebrew" >> $CIRRUS_ENV
-      echo PATH="${USER_LIB_DIR:-/opt/}homebrew/bin:${USER_LIB_DIR:-/opt/}homebrew/sbin:${PATH}" >> $CIRRUS_ENV
-      echo MANPATH="${USER_LIB_DIR:-/opt/}homebrew/share/man$:{MANPATH}" >> $CIRRUS_ENV
-      echo INFOPATH="${USER_LIB_DIR:-/opt/}homebrew/share/info:${INFOPATH}" >> $CIRRUS_ENV
+    if [[ "$IMAGE" =~ vanilla ]]; then
+      NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      echo HOMEBREW_PREFIX="${USER_LIB_DIR:-/opt/homebrew}" >> $CIRRUS_ENV
+      echo HOMEBREW_CELLAR="${USER_LIB_DIR:-/opt/homebrew}/Cellar" >> $CIRRUS_ENV
+      echo HOMEBREW_REPOSITORY="${USER_LIB_DIR:-/opt/homebrew}" >> $CIRRUS_ENV
+      echo PATH="${USER_LIB_DIR:-/opt/homebrew}/bin:${USER_LIB_DIR:-/opt/homebrew}/sbin:${PATH}" >> $CIRRUS_ENV
+      echo MANPATH="${USER_LIB_DIR:-/opt/homebrew}/share/man$:{MANPATH}" >> $CIRRUS_ENV
+      echo INFOPATH="${USER_LIB_DIR:-/opt/homebrew}/share/info:${INFOPATH}" >> $CIRRUS_ENV
+      brew install ${USER_LIB_DIR:-/opt/homebrew}/bin/brew install gh
     fi
 INSTALL_ROSETTA_TEMPLATE: &INSTALL_ROSETTA_TEMPLATE
   rosetta_script: |
@@ -108,7 +74,11 @@ INSTALL_ROSETTA_TEMPLATE: &INSTALL_ROSETTA_TEMPLATE
 INSTALL_CRYSTAL_BREW_TEMPLATE: &INSTALL_CRYSTAL_BREW_TEMPLATE
   crystal_install_script: |
     if ! [[ "$IMAGE" =~ ^(crystal|crystal-rosetta)$ ]]; then
-      HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1 $USE_ROSETTA brew install crystal
+      if [[ "$USE_ROSETTA" == "arch -x86_64" ]]; then
+        HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1 $USE_ROSETTA brew install crystal gh
+      else
+        HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1 brew install crystal
+      fi
       crystal --version
     fi
 MAKE_STATIC_LIBS_TEMPLATE: &MAKE_STATIC_LIBS_TEMPLATE
@@ -129,18 +99,28 @@ PKG_STATIC_LIBS_TEMPLATE: &PKG_STATIC_LIBS_TEMPLATE
       mkdir -p $WORK_DIR/pkg
       mv crystal-$(uname -s)-$($USE_ROSETTA uname -m)-static-libs.tar.gz $WORK_DIR/pkg
     fi
+INSTALL_CRYSTAL_MACOS_SOURCE_TEMPLATE: &INSTALL_CRYSTAL_MACOS_SOURCE_TEMPLATE
+  crystal_install_script: |
+    curl -L https://github.com/crystal-lang/crystal/releases/download/1.9.2/crystal-1.9.2-1-darwin-universal.tar.gz | tar xz
+    mv crystal-1.9.2-1 ~/crystal
+    chmod +x ~/crystal/bin/crystal
+    ~/crystal/bin/crystal --version
+    file ~/crystal/bin/crystal
+    file ~/crystal/embedded/bin/crystal
+    echo PATH=$PATH:~/crystal/bin >> $CIRRUS_ENV
 
 macos_build_task:
   # only_if: $CIRRUS_CHANGE_TITLE =~ 'build\(macos_arm_bin\).*' || $CIRRUS_CHANGE_TITLE =~ 'build\(bin\).*'
   env: 
     matrix:
-    #  - IMAGE: crystal
      - IMAGE: ghcr.io/cirruslabs/macos-ventura-base:latest
+    #  - IMAGE: crystal
     #  - IMAGE: ghcr.io/cirruslabs/macos-ventura-vanilla:latest
   macos_instance:
     image: $IMAGE
   <<: *INSTALL_BREW_TEMPLATE
-  <<: *INSTALL_CRYSTAL_BREW_TEMPLATE
+  # <<: *INSTALL_CRYSTAL_BREW_TEMPLATE
+  <<: *INSTALL_CRYSTAL_MACOS_SOURCE_TEMPLATE
   <<: *MAKE_STATIC_LIBS_TEMPLATE
   <<: *PKG_STATIC_LIBS_TEMPLATE
   <<: *HELLO_TASK_TEMPLATE
@@ -148,19 +128,20 @@ macos_build_task:
   <<: *FFI_TASK_TEMPLATE
   binary_artifacts:
     path: "pkg/*"
+
 macos_rosetta_build_task:
   only_if: $CIRRUS_CHANGE_TITLE =~ 'build\(macos_rosetta_bin\).*' || $CIRRUS_CHANGE_TITLE =~ 'build\(bin\).*'
   env: 
     USE_ROSETTA: arch -x86_64
-    USER_LIB_DIR: /usr/local/
     matrix:
-    #  - IMAGE: crystal-rosetta
      - IMAGE: ghcr.io/cirruslabs/macos-ventura-base:latest
+    #  - IMAGE: ghcr.io/cirruslabs/macos-ventura-vanilla:latest
+    #  - IMAGE: crystal-rosetta
   macos_instance:
     image: $IMAGE
-  <<: *INSTALL_ROSETTA_TEMPLATE
   <<: *INSTALL_BREW_TEMPLATE
-  <<: *INSTALL_CRYSTAL_BREW_TEMPLATE
+  <<: *INSTALL_ROSETTA_TEMPLATE
+  <<: *INSTALL_CRYSTAL_MACOS_SOURCE_TEMPLATE
   <<: *MAKE_STATIC_LIBS_TEMPLATE
   <<: *PKG_STATIC_LIBS_TEMPLATE
   <<: *HELLO_TASK_TEMPLATE
