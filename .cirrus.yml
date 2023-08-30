@@ -117,15 +117,15 @@ macos_build_task:
   # only_if: $CIRRUS_CHANGE_TITLE =~ 'build\(macos_arm_bin\).*' || $CIRRUS_CHANGE_TITLE =~ 'build\(bin\).*'
   env: 
     matrix:
-    #  - IMAGE: ghcr.io/cirruslabs/macos-ventura-base:latest
+     - IMAGE: ghcr.io/cirruslabs/macos-ventura-base:latest
     #  - IMAGE: ghcr.io/cirruslabs/macos-ventura-vanilla:latest
-     - IMAGE: ghcr.io/you54f/crystal:latest
+    #  - IMAGE: ghcr.io/you54f/crystal:latest
   macos_instance:
     image: $IMAGE
-  # <<: *INSTALL_BREW_TEMPLATE
+  <<: *INSTALL_BREW_TEMPLATE
   # <<: *INSTALL_CRYSTAL_BREW_TEMPLATE
-  # <<: *INSTALL_CRYSTAL_MACOS_SOURCE_TEMPLATE
-  # <<: *MAKE_STATIC_LIBS_TEMPLATE
+  <<: *INSTALL_CRYSTAL_MACOS_SOURCE_TEMPLATE
+  <<: *MAKE_STATIC_LIBS_TEMPLATE
   # <<: *PKG_STATIC_LIBS_TEMPLATE
   <<: *HELLO_TASK_TEMPLATE
   <<: *FETCH_FFI_TASK_TEMPLATE
@@ -138,15 +138,15 @@ macos_rosetta_build_task:
   env: 
     USE_ROSETTA: arch -x86_64
     matrix:
-    #  - IMAGE: ghcr.io/cirruslabs/macos-ventura-base:latest
+     - IMAGE: ghcr.io/cirruslabs/macos-ventura-base:latest
     #  - IMAGE: ghcr.io/cirruslabs/macos-ventura-vanilla:latest
-     - IMAGE: ghcr.io/you54f/crystal-rosetta:latest
+    #  - IMAGE: ghcr.io/you54f/crystal-rosetta:latest
   macos_instance:
     image: $IMAGE
-  # <<: *INSTALL_BREW_TEMPLATE
-  # <<: *INSTALL_ROSETTA_TEMPLATE
-  # <<: *INSTALL_CRYSTAL_MACOS_SOURCE_TEMPLATE
-  # <<: *MAKE_STATIC_LIBS_TEMPLATE
+  <<: *INSTALL_BREW_TEMPLATE
+  <<: *INSTALL_ROSETTA_TEMPLATE
+  <<: *INSTALL_CRYSTAL_MACOS_SOURCE_TEMPLATE
+  <<: *MAKE_STATIC_LIBS_TEMPLATE
   # <<: *PKG_STATIC_LIBS_TEMPLATE
   <<: *HELLO_TASK_TEMPLATE
   <<: *FETCH_FFI_TASK_TEMPLATE

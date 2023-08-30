@@ -23,7 +23,11 @@ jobs:
         run: |
             crystal build --release bin/fetch_ffi.cr --no-debug --static
             ./fetch_ffi.exe
-      - name: ffi
-        run: |
-            crystal build --release bin/ffi.cr --no-debug --static
-            ./ffi.exe
+            ls
+            pwd
+      # - name: ffi
+      #   run: |
+      #       ls
+      #       pwd
+      #       crystal build --release bin/ffi.cr --no-debug --static
+      #       ./ffi.exe
