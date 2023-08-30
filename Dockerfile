@@ -1,7 +1,6 @@
 ARG IMAGE=84codes/crystal:latest
 ARG ARCH=arm64
 FROM --platform=linux/${ARCH} ${IMAGE} as builder
-RUN apk add file
 WORKDIR /home
 ADD bin/ /home/bin/
 ADD lib/ /home/lib/
@@ -29,10 +28,8 @@ RUN ld -L$PWD -lpact_ffi && \
 RUN crystal build --release ./bin/ffi.cr --static --no-debug --link-flags "-L$PWD" && \
     ldd ffi 2>&1 | grep -q 'Not a valid dynamic program' && \
     rm -rf libpact_ffi.a && \
-    file ffi && \
     du -hs ffi && \
     strip -s ffi && \
-    file ffi && \
     du -hs ffi && \
     ./ffi
 ENTRYPOINT [ "/bin/sh", "-c" ]

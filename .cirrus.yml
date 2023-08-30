@@ -1,9 +1,12 @@
 HELLO_TASK_TEMPLATE: &HELLO_TASK_TEMPLATE
   hello_script: |
     APP_NAME=hello
-    if [[ $IMAGE == "crystal" || $IMAGE == "crystal-rosetta" ]]; then
+    if [[ "$IMAGE" =~ (crystal|crystal-rosetta) ]]; then
+      echo "Building with built in image"
       $USE_ROSETTA crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD -L/Users/Admin/hello_crystal -I/Users/Admin/hello_crystal/include"
     else
+      echo "building with libs in local dir"
+      echo $IMAGE
       $USE_ROSETTA crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD"
     fi
     file $APP_NAME
@@ -18,7 +21,7 @@ HELLO_TASK_TEMPLATE: &HELLO_TASK_TEMPLATE
 FETCH_FFI_TASK_TEMPLATE: &FETCH_FFI_TASK_TEMPLATE
   fetch_ffi_script: |
     APP_NAME=fetch_ffi
-    if [[ $IMAGE == "crystal" || $IMAGE == "crystal-rosetta" ]]; then
+    if [[ "$IMAGE" =~ (crystal|crystal-rosetta) ]]; then
       $USE_ROSETTA crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD -L/Users/Admin/hello_crystal -I/Users/Admin/hello_crystal/include"
     else
       $USE_ROSETTA crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD -I$PWD/include"
@@ -39,7 +42,7 @@ FETCH_FFI_TASK_TEMPLATE: &FETCH_FFI_TASK_TEMPLATE
 FFI_TASK_TEMPLATE: &FFI_TASK_TEMPLATE
   ffi_script: |
     APP_NAME=ffi
-    if [[ $IMAGE == "crystal" || $IMAGE == "crystal-rosetta" ]]; then
+    if [[ "$IMAGE" =~ (crystal|crystal-rosetta) ]]; then
       $USE_ROSETTA crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD -L/Users/Admin/hello_crystal -I/Users/Admin/hello_crystal/include -framework CoreFoundation -framework IOKit -framework Security"
     else
       $USE_ROSETTA crystal build --release bin/$APP_NAME.cr --no-debug --link-flags="-L$PWD -I$PWD/include -framework CoreFoundation -framework IOKit -framework Security"
@@ -64,16 +67,16 @@ INSTALL_BREW_TEMPLATE: &INSTALL_BREW_TEMPLATE
       echo PATH="${USER_LIB_DIR:-/opt/homebrew}/bin:${USER_LIB_DIR:-/opt/homebrew}/sbin:${PATH}" >> $CIRRUS_ENV
       echo MANPATH="${USER_LIB_DIR:-/opt/homebrew}/share/man$:{MANPATH}" >> $CIRRUS_ENV
       echo INFOPATH="${USER_LIB_DIR:-/opt/homebrew}/share/info:${INFOPATH}" >> $CIRRUS_ENV
-      brew install ${USER_LIB_DIR:-/opt/homebrew}/bin/brew install gh
+      # ${USER_LIB_DIR:-/opt/homebrew}/bin/brew install gh
     fi
 INSTALL_ROSETTA_TEMPLATE: &INSTALL_ROSETTA_TEMPLATE
   rosetta_script: |
-    if ! [[ "$IMAGE" =~ ^(crystal|crystal-rosetta)$ ]]; then
+    if ! [[ "$IMAGE" =~ (crystal|crystal-rosetta) ]] && [[ $USE_ROSETTA != "" ]]; then
       softwareupdate --install-rosetta --agree-to-license
     fi
 INSTALL_CRYSTAL_BREW_TEMPLATE: &INSTALL_CRYSTAL_BREW_TEMPLATE
   crystal_install_script: |
-    if ! [[ "$IMAGE" =~ ^(crystal|crystal-rosetta)$ ]]; then
+    if ! [[ "$IMAGE" =~ (crystal|crystal-rosetta) ]]; then
       if [[ "$USE_ROSETTA" == "arch -x86_64" ]]; then
         HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1 $USE_ROSETTA brew install crystal gh
       else
@@ -83,17 +86,17 @@ INSTALL_CRYSTAL_BREW_TEMPLATE: &INSTALL_CRYSTAL_BREW_TEMPLATE
     fi
 MAKE_STATIC_LIBS_TEMPLATE: &MAKE_STATIC_LIBS_TEMPLATE
   crystal_static_libs_script: |
-    if ! [[ "$IMAGE" =~ ^(crystal|crystal-rosetta)$ ]]; then
+    if ! [[ "$IMAGE" =~ (crystal|crystal-rosetta) ]]; then
       # $USE_ROSETTA make libs
       # gh release download --repo you54f/hello_crystal -p "*$($USE_ROSETTA uname -m)-static-libs*"
-      curl -L "https://github.com/YOU54F/hello_crystal/releases/download/0.0.1/crystal-Darwin-$($USE_ROSETTA uname -m)-static-libs.tar.gz"
+      curl -LO "https://github.com/YOU54F/hello_crystal/releases/download/0.0.1/crystal-Darwin-$($USE_ROSETTA uname -m)-static-libs.tar.gz"
       tar -xzvf crystal-Darwin-$($USE_ROSETTA uname -m)-static-libs.tar.gz
       ls
       pwd
     fi
 PKG_STATIC_LIBS_TEMPLATE: &PKG_STATIC_LIBS_TEMPLATE
   package_static_libs_script: |
-    if [[ "$IMAGE" =~ ^(crystal|crystal-rosetta)$ ]]; then
+    if [[ "$IMAGE" =~ (crystal|crystal-rosetta) ]]; then
       export WORK_DIR=$PWD
       cd /Users/Admin/hello_crystal
       tar -czvf crystal-$(uname -s)-$($USE_ROSETTA uname -m)-static-libs.tar.gz *.a include/
@@ -115,15 +118,15 @@ macos_build_task:
   env: 
     matrix:
     #  - IMAGE: ghcr.io/cirruslabs/macos-ventura-base:latest
-    #  - IMAGE: ghcr.io/you54f/crystal:latest
-     - IMAGE: ghcr.io/cirruslabs/macos-ventura-vanilla:latest
+    #  - IMAGE: ghcr.io/cirruslabs/macos-ventura-vanilla:latest
+     - IMAGE: ghcr.io/you54f/crystal:latest
   macos_instance:
     image: $IMAGE
-  <<: *INSTALL_BREW_TEMPLATE
+  # <<: *INSTALL_BREW_TEMPLATE
   # <<: *INSTALL_CRYSTAL_BREW_TEMPLATE
-  <<: *INSTALL_CRYSTAL_MACOS_SOURCE_TEMPLATE
-  <<: *MAKE_STATIC_LIBS_TEMPLATE
-  <<: *PKG_STATIC_LIBS_TEMPLATE
+  # <<: *INSTALL_CRYSTAL_MACOS_SOURCE_TEMPLATE
+  # <<: *MAKE_STATIC_LIBS_TEMPLATE
+  # <<: *PKG_STATIC_LIBS_TEMPLATE
   <<: *HELLO_TASK_TEMPLATE
   <<: *FETCH_FFI_TASK_TEMPLATE
   <<: *FFI_TASK_TEMPLATE
@@ -136,15 +139,15 @@ macos_rosetta_build_task:
     USE_ROSETTA: arch -x86_64
     matrix:
     #  - IMAGE: ghcr.io/cirruslabs/macos-ventura-base:latest
-     - IMAGE: ghcr.io/cirruslabs/macos-ventura-vanilla:latest
-    #  - IMAGE: ghcr.io/you54f/crystal-rosetta:latest
+    #  - IMAGE: ghcr.io/cirruslabs/macos-ventura-vanilla:latest
+     - IMAGE: ghcr.io/you54f/crystal-rosetta:latest
   macos_instance:
     image: $IMAGE
-  <<: *INSTALL_BREW_TEMPLATE
-  <<: *INSTALL_ROSETTA_TEMPLATE
-  <<: *INSTALL_CRYSTAL_MACOS_SOURCE_TEMPLATE
-  <<: *MAKE_STATIC_LIBS_TEMPLATE
-  <<: *PKG_STATIC_LIBS_TEMPLATE
+  # <<: *INSTALL_BREW_TEMPLATE
+  # <<: *INSTALL_ROSETTA_TEMPLATE
+  # <<: *INSTALL_CRYSTAL_MACOS_SOURCE_TEMPLATE
+  # <<: *MAKE_STATIC_LIBS_TEMPLATE
+  # <<: *PKG_STATIC_LIBS_TEMPLATE
   <<: *HELLO_TASK_TEMPLATE
   <<: *FETCH_FFI_TASK_TEMPLATE
   <<: *FFI_TASK_TEMPLATE

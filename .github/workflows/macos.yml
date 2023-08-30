@@ -27,7 +27,7 @@ jobs:
             file $APP_NAME
             otool -L $APP_NAME
             du -hs $APP_NAME
-            strip -s $APP_NAME
+            strip -S $APP_NAME
             du -hs $APP_NAME
             chmod +x check_dynamic_linking.sh && ./check_dynamic_linking.sh $APP_NAME
             mkdir -p pkg
@@ -40,13 +40,13 @@ jobs:
             file $APP_NAME
             otool -L $APP_NAME
             du -hs $APP_NAME
-            strip -s $APPNAME
+            strip -S $APPNAME
             du -hs $APP_NAME
             chmod +x check_dynamic_linking.sh && ./check_dynamic_linking.sh $APP_NAME
             mkdir -p pkg
             mv $APP_NAME pkg
             du -hs libpact_ffi.a
-            strip --strip-unneeded libpact_ffi.a
+            strip -S libpact_ffi.a
             du -hs libpact_ffi.a
       - name: ffi
         run: |
@@ -56,7 +56,7 @@ jobs:
             file $APP_NAME
             otool -L $APP_NAME
             du -hs $APP_NAME
-            strip -s $APPNAME
+            strip -S $APPNAME
             du -hs $APP_NAME
             chmod +x check_dynamic_linking.sh && ./check_dynamic_linking.sh $APP_NAME
             mkdir -p pkg
